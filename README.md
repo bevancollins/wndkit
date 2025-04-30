@@ -1,14 +1,8 @@
 # wndkit
 
-**wndkit** is a modern C++20 Win32 message routing library designed to make message handling intuitive, type-safe, and fun. It wraps raw Win32 message dispatch into clean, composable APIs.
+**wndkit** is a modern C++20 Win32 message routing library designed to make message handling intuitive and type-safe. It wraps raw Win32 message dispatch into clean, composable APIs.
 
-## ✨ Features
-
-- Type-safe handlers for Win32 messages.
-- Support for `boost::signals2` via `*_invoke` variants.
-- Sticks to it's lane, only does message routing. This is a library not a framework.
-
-## 🚀 Getting Started
+## An Example
 
 ```cpp
 #include <windows.h>
@@ -29,8 +23,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) {
     CW_USEDEFAULT, CW_USEDEFAULT, 400, 300,
     nullptr, nullptr, hInstance, nullptr
   );
-
-  WORD button_id = 1001;
 
   HWND button = CreateWindowW(
     WC_BUTTON, L"Click Me",
