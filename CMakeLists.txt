@@ -18,3 +18,5 @@ target_include_directories(wndkit INTERFACE
 
 target_compile_features(wndkit INTERFACE cxx_std_20)
 set_target_properties(wndkit PROPERTIES INTERFACE_HEADER_ONLY ON)
+
+add_subdirectory(examples)
