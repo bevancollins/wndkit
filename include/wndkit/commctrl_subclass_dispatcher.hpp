@@ -51,6 +51,12 @@ public:
 private:
   static LRESULT CALLBACK subclass_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, [[maybe_unused]] UINT_PTR id_subclass, DWORD_PTR ref_data) {
     auto self = reinterpret_cast<commctrl_subclass_dispatcher*>(ref_data);
+
+    if (msg == WM_NCDESTROY) {
+      std::scoped_lock lock(self->mutex_);
+      self->ids_.erase(hwnd);
+    }
+
     auto result = self->handler_.call_handler(hwnd, msg, wparam, lparam);
     if (result)
       return *result;
@@ -59,9 +65,9 @@ private:
   }
 
   static UINT next_id() noexcept {
-		static UINT id{};
-		return id++;
-	}
+    static UINT id{};
+    return id++;
+  }
 
   message_handler handler_;
   std::unordered_map<HWND, UINT> ids_;

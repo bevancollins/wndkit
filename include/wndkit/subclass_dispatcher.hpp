@@ -65,6 +65,10 @@ private:
         if (it != self->subclasses_.end())
           wndproc = it->second;
       }
+
+      if (msg == WM_NCDESTROY)
+        self->unsubclass(hwnd);
+
       if (wndproc)
         return CallWindowProcW(wndproc, hwnd, msg, wparam, lparam);
     }
