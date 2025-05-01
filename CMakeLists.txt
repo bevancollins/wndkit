@@ -15,3 +15,6 @@ add_library(wndkit INTERFACE
 target_include_directories(wndkit INTERFACE
   include
 )
+
+target_compile_features(wndkit INTERFACE cxx_std_20)
+set_target_properties(wndkit PROPERTIES INTERFACE_HEADER_ONLY ON)
