@@ -33,13 +33,13 @@ struct message_params {
   LPARAM lparam;
 };
 
-#ifndef GET_X_LPARAM
-#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp)) // copied from windowsx.h
-#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
-#endif
-
 struct pos_params : public message_params {
-  [[nodiscard]] POINT pos() const noexcept { return {GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)}; }
+  [[nodiscard]] POINT pos() const noexcept {
+    return {
+      static_cast<int>(static_cast<short>(LOWORD(lparam))),
+      static_cast<int>(static_cast<short>(HIWORD(lparam)))
+    };
+  }
 };
 
 struct command_params : public message_params {
