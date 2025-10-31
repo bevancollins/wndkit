@@ -14,7 +14,7 @@ namespace wndkit {
 
 class dispatcher {
 public:
-  static void subclass_window(HWND hwnd, message_handler* handler, UINT_PTR id_subclass = {}, DWORD_PTR ref_data = {}) {
+  static void subclass_window(HWND hwnd, message_handler& handler, UINT_PTR id_subclass = {}, DWORD_PTR ref_data = {}) {
     if (!SetWindowSubclass(hwnd, wndkit::dispatcher::sub_class_proc, id_subclass, ref_data))
       throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
 
@@ -56,14 +56,13 @@ public:
 
 private:
   static auto& handlers() {
-    thread_local static std::unordered_map<HWND, message_handler*> handlers_;
+    thread_local static std::unordered_map<HWND, message_handler&> handlers_;
     return handlers_;
   }
 
 public:
-  static void attach_window(HWND hwnd, message_handler* handler) {
+  static void attach_window(HWND hwnd, message_handler& handler) {
     assert(hwnd);
-    assert(handler);
 
     auto inserted = handlers().insert({hwnd, handler});
     assert(inserted.second);
@@ -76,7 +75,7 @@ private:
       auto create_params = reinterpret_cast<message_handler::create_params*>(create_struct->lpCreateParams);
       create_struct->lpCreateParams = create_params->original_create_params;
 
-      auto ret = create_params->handler->call_handler(hwnd, msg, wparam, lparam);
+      auto ret = create_params->handler.call_handler(hwnd, msg, wparam, lparam);
       if (ret.value_or(true))
         handlers().insert({hwnd, create_params->handler});
 
@@ -86,7 +85,7 @@ private:
       if (match == handlers().end()) {
         return std::nullopt;
       } else {
-        auto ret = match->second->call_handler(hwnd, msg, wparam, lparam);
+        auto ret = match->second.call_handler(hwnd, msg, wparam, lparam);
 
         if (msg == WM_NCDESTROY)
           handlers().erase(match);

@@ -21,7 +21,7 @@ class message_handler {
 public:
   HWND create(DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params) {
 
-    create_params create_params_shim{this, params};
+    create_params create_params_shim{*this, params};
     return CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, &create_params_shim);
   }
 
@@ -382,7 +382,7 @@ public:
   friend class dispatcher;
 protected:
   struct create_params {
-    message_handler* handler;
+    message_handler& handler;
     LPVOID original_create_params;
   };
 

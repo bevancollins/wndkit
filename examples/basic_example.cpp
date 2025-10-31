@@ -16,7 +16,7 @@ public:
         WS_CHILD | WS_VISIBLE,
         x, y, width, height,
         parent, {}, instance, {});
-    wndkit::dispatcher::subclass_window(hwnd_, &message_handler_);
+    wndkit::dispatcher::subclass_window(hwnd_, message_handler_);
 
     message_handler_.on_message<WM_TIMER>([this]([[maybe_unused]] HWND, [[maybe_unused]] const wndkit::timer_params&) {
       tick();
