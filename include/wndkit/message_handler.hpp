@@ -36,7 +36,7 @@ public:
 
      Template Parameters:
        Msg    - The Windows message ID (e.g., WM_PAINT, WM_COMMAND).
-       Handler - The callable to invoke when the message is received.
+       Handler - The handler to invoke when the message is received.
        Filter  - (Optional) A filter object to control handler invocation
                  based on message-specific criteria (defaults to `no_filter`).
 
@@ -77,8 +77,8 @@ public:
   }
 
   /*
-     Registers a message handler that invokes a callable without passing any message parameters.
-     This is typically used when the callable is a signal, lambda, or function object
+     Registers a message handler that invokes a handler without passing any message parameters.
+     This is typically used when the handler is a signal, lambda, or function object
      that takes no arguments.
 
      An optional filter can be provided to control whether the handler should be invoked
@@ -93,54 +93,54 @@ public:
   template<UINT Msg, typename Handler, typename Filter = no_filter>
   requires std::invocable<Handler>
   message_handler& on_message_invoke(Handler&& handler, Filter filter = {}) {
-    return on_message<Msg>([&handler](HWND, const auto&) mutable {
+    return on_message<Msg>([handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
         std::invoke(handler);
       }, std::move(filter));
   }
 
   /*
-     Registers a message handler that invokes a callable with HWND as the first argument,
+     Registers a message handler that invokes a handler with HWND as the first argument,
      followed by any additional user-supplied arguments.
   
-     This overload allows you to bind any callable that takes an HWND and fixed arguments,
+     This overload allows you to bind any handler that takes an HWND and fixed arguments,
      and register it as the handler for a specific Windows message.
   
      Examples:
        on_message_invoke<WM_CLOSE>(DestroyWindow);
        on_message_invoke<WM_RBUTTONDOWN>(MessageBoxW, L"Right click!", L"Info", MB_OK);
 
-     The callable must be invocable as: callable(HWND, Args...)
+     The handler must be invocable as: handler(HWND, Args...)
   */
-  template<UINT Msg, typename Callable, typename... Args>
-  requires std::invocable<Callable, HWND, Args...>
-  message_handler& on_message_invoke(Callable&& callable, Args&&... args) {
+  template<UINT Msg, typename Handler, typename... Args>
+  requires std::invocable<Handler, HWND, Args...>
+  message_handler& on_message_invoke(Handler&& handler, Args&&... args) {
     return on_message<Msg>(
-        [fn = std::forward<Callable>(callable),
+        [handler = std::forward<Handler>(handler),
         ...captured_args = std::forward<Args>(args)](HWND hwnd, const auto&) mutable {
-      std::invoke(fn, hwnd, captured_args...);
+      std::invoke(handler, hwnd, captured_args...);
     });
   }
 
   /*
-     Registers a message handler that invokes a callable without passing HWND,
-     but instead binds a fixed set of arguments to be passed to the callable.
+     Registers a message handler that invokes a handler without passing HWND,
+     but instead binds a fixed set of arguments to be passed to the handler.
 
      This overload is useful when the message handler does not need the HWND,
-     and the callable is already fully bound with the necessary arguments.
+     and the handler is already fully bound with the necessary arguments.
 
      Examples:
        on_message_invoke<WM_DESTROY>(PostQuitMessage, 0);
        on_message_invoke<WM_USER>(some_function, 42, "data");
 
-     The callable must be invocable as: callable(Args...)
+     The handler must be invocable as: handler(Args...)
   */
-  template<UINT Msg, typename Callable, typename... Args>
-  requires (sizeof...(Args) > 0) && std::invocable<Callable, Args...>
-  message_handler& on_message_invoke(Callable&& callable, Args&&... args) {
+  template<UINT Msg, typename Handler, typename... Args>
+  requires (sizeof...(Args) > 0) && std::invocable<Handler, Args...>
+  message_handler& on_message_invoke(Handler&& handler, Args&&... args) {
     return on_message<Msg>(
-        [fn = std::forward<Callable>(callable),
+        [handler = std::forward<Handler>(handler),
         ...captured_args = std::forward<Args>(args)](HWND, const auto&) mutable {
-      std::invoke(fn, captured_args...);
+      std::invoke(handler, captured_args...);
     });
   }
 
@@ -184,7 +184,7 @@ public:
 
   /*
      Registers a handler for a specific WM_NOTIFY notification code and control ID,
-     where the supplied callable does not require any parameters.
+     where the supplied handler does not require any parameters.
 
      This is a convenience overload of `on_notify` for cases where you only want
      to invoke a function or lambda without using the HWND or notification parameters.
@@ -199,12 +199,12 @@ public:
        on_notify_invoke<LVN_ITEMCHANGED>(IDC_LIST, SomeStaticFunction);
 
      Internally, this wraps the handler in a lambda that discards the HWND and
-     notification parameters, and simply invokes the supplied callable.
+     notification parameters, and simply invokes the supplied handler.
   */
   template<UINT Code, typename Handler>
   requires std::invocable<Handler>
   message_handler& on_notify_invoke(UINT_PTR control_id, Handler&& handler) {
-    return on_notify<Code>(control_id, [&handler](HWND, const auto&) mutable {
+    return on_notify<Code>(control_id, [handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
         std::invoke(handler);
       });
   }
@@ -228,7 +228,7 @@ public:
   }
 
   /*
-     Registers a handler for a specific WM_COMMAND control ID and invokes a callable
+     Registers a handler for a specific WM_COMMAND control ID and invokes a handler
      without any parameters when the command is received.
 
      This overload is useful when the associated action does not need to inspect the message
@@ -244,37 +244,37 @@ public:
   template<typename Handler>
   requires std::invocable<Handler>
   message_handler& on_command_invoke(WORD id, Handler&& handler) {
-    return on_command(id, [&handler](HWND, const auto&) mutable {
+    return on_command(id, [handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
         std::invoke(handler);
       });
   }
 
   /*
-     Registers a WM_COMMAND handler for a specific control ID, invoking the provided callable
+     Registers a WM_COMMAND handler for a specific control ID, invoking the provided handler
      with HWND as the first argument, followed by any additional user-supplied arguments.
 
-     This overload is ideal for callables that require a window handle along with fixed arguments,
+     This overload is ideal for handler that require a window handle along with fixed arguments,
      such as standard Windows API functions.
 
      Examples:
        on_command_invoke(IDOK, EndDialog, IDOK);
        on_command_invoke(IDC_SHOW_INFO, MessageBoxW, L"Title", L"Info", MB_OK);
 
-     The callable must be invocable as: callable(HWND, Args...)
+     The handler must be invocable as: handler(HWND, Args...)
   */
-  template<typename Callable, typename... Args>
-  requires std::invocable<Callable, HWND, Args...>
-  message_handler& on_command_invoke(WORD id, Callable&& callable, Args&&... args) {
+  template<typename Handler, typename... Args>
+  requires std::invocable<Handler, HWND, Args...>
+  message_handler& on_command_invoke(WORD id, Handler&& handler, Args&&... args) {
     return on_command(id,
-        [fn = std::forward<Callable>(callable),
+        [handler = std::forward<Handler>(handler),
         ...captured_args = std::forward<Args>(args)](HWND hwnd, const auto&) mutable {
-      std::invoke(fn, hwnd, captured_args...);
+      std::invoke(handler, hwnd, captured_args...);
     });
   }
 
   /*
-     Registers a WM_COMMAND handler for a specific control ID, invoking the provided callable
-     with fixed arguments (excluding HWND). This is useful when the callable does not require
+     Registers a WM_COMMAND handler for a specific control ID, invoking the provided handler
+     with fixed arguments (excluding HWND). This is useful when the handler does not require
      a window handle and only needs fixed arguments.
 
      This is typically used for functions or functors that operate independently of HWND.
@@ -283,16 +283,16 @@ public:
        on_command_invoke(IDOK, PostQuitMessage, 0);
        on_command_invoke(IDC_LOG, some_logger_function, "Button clicked");
 
-     The callable must be invocable as: callable(Args...)
+     The handler must be invocable as: handler(Args...)
      At least one argument must be provided.
   */
-  template<typename Callable, typename... Args>
-  requires (sizeof...(Args) > 0) && std::invocable<Callable, Args...>
-  message_handler& on_command_invoke(WORD id, Callable&& callable, Args&&... args) {
+  template<typename Handler, typename... Args>
+  requires (sizeof...(Args) > 0) && std::invocable<Handler, Args...>
+  message_handler& on_command_invoke(WORD id, Handler&& handler, Args&&... args) {
     return on_command(id,
-        [fn = std::forward<Callable>(callable),
+        [handler = std::forward<Handler>(handler),
         ...captured_args = std::forward<Args>(args)](HWND, const auto&) mutable {
-      std::invoke(fn, captured_args...);
+      std::invoke(handler, captured_args...);
     });
   }
 
@@ -332,7 +332,7 @@ public:
 
   /*
      Registers a handler for a WM_COMMAND message with a specific control ID (`id`) and
-     notification code (`NotifyCode`), invoking a callable that takes no arguments.
+     notification code (`NotifyCode`), invoking a handler that takes no arguments.
 
      This overload is useful when the callback does not need to access message parameters,
      and the match is based solely on the ID and notification code.
@@ -349,7 +349,7 @@ public:
   template<WORD NotifyCode, typename Handler>
   requires std::invocable<Handler>
   message_handler& on_command_notify_invoke(WORD id, Handler&& handler) {
-    return on_command_notify<NotifyCode>(id, [&handler](HWND, const auto&) mutable {
+    return on_command_notify<NotifyCode>(id, [handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
         std::invoke(handler);
       });
   }
