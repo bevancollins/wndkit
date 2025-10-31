@@ -3,8 +3,6 @@ project(wndkit)
 
 add_library(wndkit INTERFACE
   include/wndkit/dispatcher.hpp
-  include/wndkit/subclass_dispatcher.hpp
-  include/wndkit/commctrl_subclass_dispatcher.hpp
   include/wndkit/message_filters.hpp
   include/wndkit/message_handler.hpp
   include/wndkit/message_params.hpp

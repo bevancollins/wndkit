@@ -9,14 +9,23 @@
 #include <unordered_map>
 #include <optional>
 #include <vector>
-#include "wndkit/message_filters.hpp"
-#include "wndkit/details/message_traits.hpp"
-#include "wndkit/details/notify_traits.hpp"
+#include "message_filters.hpp"
+#include "details/message_traits.hpp"
+#include "details/notify_traits.hpp"
 
 namespace wndkit {
 
+class dispatcher;
+
 class message_handler {
 public:
+  HWND create(DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params) {
+
+    create_params create_params_shim{this, params};
+    return CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, &create_params_shim);
+  }
+
+
   /*
      Registers a message handler for a specific Windows message.
 
@@ -105,10 +114,10 @@ public:
   template<UINT Msg, typename Callable, typename... Args>
   requires std::invocable<Callable, HWND, Args...>
   message_handler& on_message_invoke(Callable&& callable, Args&&... args) {
-  return on_message<Msg>(
-      [fn = std::forward<Callable>(callable),
-      ...captured_args = std::forward<Args>(args)](HWND hwnd, const auto&) mutable {
-    std::invoke(fn, hwnd, captured_args...);
+    return on_message<Msg>(
+        [fn = std::forward<Callable>(callable),
+        ...captured_args = std::forward<Args>(args)](HWND hwnd, const auto&) mutable {
+      std::invoke(fn, hwnd, captured_args...);
     });
   }
 
@@ -369,6 +378,13 @@ public:
 
     return std::nullopt;
   }
+
+  friend class dispatcher;
+protected:
+  struct create_params {
+    message_handler* handler;
+    LPVOID original_create_params;
+  };
 
 private:
   using handler_fn = std::function<std::optional<LRESULT>(HWND, const message_params&)>;

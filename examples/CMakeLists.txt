@@ -4,4 +4,5 @@ add_executable(basic_example WIN32
 
 target_link_libraries(basic_example
   wndkit
+  comctl32
 )

@@ -121,7 +121,7 @@ struct copydata_params : public message_params {
 };
 
 struct create_params : public message_params {
-  [[nodiscard]] CREATESTRUCT& createstruct() const noexcept { return *reinterpret_cast<CREATESTRUCT*>(lparam); }
+  [[nodiscard]] auto createstruct() const noexcept { return reinterpret_cast<CREATESTRUCTW*>(lparam); }
 };
 
 struct ctlcolorbtn_params : public message_params {
@@ -410,7 +410,7 @@ struct nccalcsize_params : public message_params {
 };
 
 struct nccreate_params : public message_params {
-  [[nodiscard]] CREATESTRUCT& createstruct() const noexcept { return *reinterpret_cast<CREATESTRUCT*>(lparam); }
+  [[nodiscard]] auto createstruct() const noexcept { return reinterpret_cast<CREATESTRUCTW*>(lparam); }
 };
 
 using ncdestroy_params = message_params;
