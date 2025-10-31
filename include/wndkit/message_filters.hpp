@@ -5,8 +5,8 @@
 
 #include <windows.h>
 #include <optional>
-#include "wndkit/details/message_traits.hpp"
-#include "wndkit/details/notify_traits.hpp"
+#include "details/message_traits.hpp"
+#include "details/notify_traits.hpp"
 
 namespace wndkit {
 
