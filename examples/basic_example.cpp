@@ -4,26 +4,39 @@
 #include <wndkit/dispatcher.hpp>
 #include <wndkit/message_handler.hpp>
 
-#define IDC_BUTTON 1001
+#define IDC_START_BUTTON 1001
+#define IDC_STOP_BUTTON 1002
 
 class ticker : public wndkit::message_handler {
 public:
   void create(HWND parent, int x, int y, int width, int height, HINSTANCE instance) {
-    auto hwnd = CreateWindowW(
+    hwnd_ = CreateWindowW(
         WC_STATICW, {},
         WS_CHILD | WS_VISIBLE,
         x, y, width, height,
         parent, {}, instance, {});
-    wndkit::dispatcher::subclass_window(hwnd, this);
+    wndkit::dispatcher::subclass_window(hwnd_, this);
 
-    SetTimer(hwnd, 1, 1000, nullptr);
-
-    on_message<WM_TIMER>([this](HWND hwnd, [[maybe_unused]] const wndkit::timer_params&) {
-      SetWindowTextW(hwnd, std::to_wstring(++seconds_).c_str());
+    on_message<WM_TIMER>([this]([[maybe_unused]] HWND, [[maybe_unused]] const wndkit::timer_params&) {
+      tick();
     });
   }
 
+  void start() {
+    SetTimer(hwnd_, 1, 1000, nullptr);
+  }
+
+  void stop() {
+    KillTimer(hwnd_, 1);
+  }
+
 private:
+  void tick() {
+    seconds_++;
+    SetWindowTextW(hwnd_, std::to_wstring(seconds_).c_str());
+  }
+
+  HWND hwnd_{};
   int seconds_{};
 };
 
@@ -36,16 +49,27 @@ public:
 
     on_message_invoke<WM_CLOSE>(DestroyWindow);
     on_message_invoke<WM_DESTROY>(PostQuitMessage, 0);
-    on_command_invoke(IDC_BUTTON, MessageBoxW, L"Button clicked!", L"Info", MB_OK);
+    on_command_invoke(IDC_START_BUTTON, [this]() {
+      ticker_.start();
+    });
+    on_command_invoke(IDC_STOP_BUTTON, [this]() {
+      ticker_.stop();
+    });
   }
 
 private:
   void on_create(HWND hwnd, const wndkit::create_params& params) {
     CreateWindowW(
-        WC_BUTTONW, L"Click Me",
+        WC_BUTTONW, L"Start",
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        50, 50, 150, 40,
-        hwnd, (HMENU)IDC_BUTTON, params.createstruct()->hInstance, {});
+        50, 50, 150, 20,
+        hwnd, (HMENU)IDC_START_BUTTON, params.createstruct()->hInstance, {});
+
+    CreateWindowW(
+        WC_BUTTONW, L"Stop",
+        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        50, 70, 150, 20,
+        hwnd, (HMENU)IDC_STOP_BUTTON, params.createstruct()->hInstance, {});
 
     ticker_.create(hwnd, 50, 100, 50, 20, params.createstruct()->hInstance);
   }
