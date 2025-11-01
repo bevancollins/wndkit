@@ -628,4 +628,8 @@ struct windowposchanged_params : public message_params {
 
 using windowposchanging_params = windowposchanged_params;
 
+struct quit_params : public message_params {
+  [[nodiscard]] int exit_code() const noexcept { return static_cast<int>(wparam); }
+};
+
 }

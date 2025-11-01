@@ -56,8 +56,10 @@ public:
       auto ret = GetMessageW(&msg, 0, 0, 0);
       if (ret == -1)
         throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
-      else if (!ret)
-        return static_cast<int>(msg.wParam);
+      else if (ret == 0) {
+        quit_params params{msg.wParam, msg.lParam};
+        return params.exit_code();
+      }
 
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
