@@ -69,6 +69,7 @@ public:
     return result.value_or(DefWindowProcW(hwnd, msg, wparam, lparam));
   }
 
+private:
   static INT_PTR CALLBACK dialog_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     auto result = call_handler(hwnd, msg, wparam, lparam);
     return result.value_or(FALSE);
@@ -79,7 +80,6 @@ public:
     return result.value_or(DefSubclassProc(hwnd, msg, wparam, lparam));
   }
 
-private:
   static auto& handlers() {
     thread_local static std::unordered_map<HWND, message_handler&> handlers_;
     return handlers_;
