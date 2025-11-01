@@ -505,8 +505,8 @@ struct renderformat_params : public message_params {
 
 struct setcursor_params : public message_params {
   [[nodiscard]] HWND cursor_owner() const noexcept   { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] short hit_test_code() const noexcept { return static_cast<short>(LOWORD(wparam)); }
-  [[nodiscard]] WORD mouse_msg_id() const noexcept   { return HIWORD(wparam); }
+  [[nodiscard]] short hit_test_code() const noexcept { return static_cast<short>(LOWORD(lparam)); }
+  [[nodiscard]] WORD mouse_msg_id() const noexcept   { return HIWORD(lparam); }
 };
 
 struct setfocus_params : public message_params {
@@ -516,6 +516,7 @@ struct setfocus_params : public message_params {
 struct setfont_params : public message_params {
   [[nodiscard]] HFONT hfont() const noexcept        { return reinterpret_cast<HFONT>(wparam); }
   [[nodiscard]] bool should_redraw() const noexcept { return LOWORD(lparam) != FALSE; }
+  void set_should_redraw(bool f) noexcept           { lparam = MAKELONG(HIWORD(lparam), LOWORD(f ? TRUE : FALSE)); }
 };
 
 struct sethotkey_params : public message_params {
