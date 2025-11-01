@@ -6,7 +6,7 @@
 #include <wndkit/message_handler.hpp>
 
 #define IDC_START_BUTTON 1001
-#define IDC_STOP_BUTTON 1002
+#define IDC_STOP_BUTTON  1002
 
 class ticker {
 public:
@@ -18,7 +18,7 @@ public:
         parent, {}, instance, {});
     wndkit::dispatcher::subclass_window(hwnd_, message_handler_);
 
-    message_handler_.on_message<WM_TIMER>([this]([[maybe_unused]] HWND, [[maybe_unused]] const wndkit::timer_params&) {
+    message_handler_.on_message<WM_TIMER>([this](HWND, const auto&) {
       tick();
     });
   }
@@ -45,22 +45,23 @@ private:
 class example_window {
 public:
   example_window() {
-    message_handler_.on_message<WM_CREATE>([this](HWND hwnd, const wndkit::create_params& params) {
-      on_create(hwnd, params);
-    })
-    .on_message_invoke<WM_CLOSE>(DestroyWindow)
-    .on_message_invoke<WM_DESTROY>(PostQuitMessage, 0)
-    .on_command_invoke(IDC_START_BUTTON, [this]() {
-      ticker_.start();
-    })
-    .on_command_invoke(IDC_STOP_BUTTON, [this]() {
-      ticker_.stop();
-    });
+    message_handler_
+      .on_message<WM_CREATE>([this](HWND hwnd, const auto& params) {
+        on_create(hwnd, params);
+      })
+      .on_message_invoke<WM_CLOSE>(DestroyWindow)
+      .on_message_invoke<WM_DESTROY>(PostQuitMessage, 0)
+      .on_command_invoke(IDC_START_BUTTON, [this]() {
+        ticker_.start();
+      })
+      .on_command_invoke(IDC_STOP_BUTTON, [this]() {
+        ticker_.stop();
+      });
   }
 
   template<typename... Args>
   decltype(auto) create(Args&&... args) {
-    return message_handler_.create(std::forward<Args>(args)...);
+    return wndkit::dispatcher::create_window(message_handler_, std::forward<Args>(args)...);
   }
 
 private:
@@ -92,7 +93,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int) {
   InitCommonControlsEx(&init_cc);
 
   WNDCLASSW wc{
-    .lpfnWndProc = wndkit::dispatcher::def_window_proc,
+    .lpfnWndProc = wndkit::dispatcher::window_proc,
     .hInstance = hInstance,
     .hCursor = LoadCursor(nullptr, IDC_ARROW),
     .hbrBackground = (HBRUSH)(COLOR_WINDOW+1),

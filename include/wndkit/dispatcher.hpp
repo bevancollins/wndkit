@@ -21,6 +21,21 @@ public:
     attach_window(hwnd, handler);
   }
 
+  /*
+      Create a window and attach a message handler
+   */
+  static HWND create_window(message_handler& handler, DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params) {
+    create_window_params param_shim{handler, params};
+    return CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, &param_shim);
+  }
+
+  /*
+      Create a dialog and attach a message handler
+   */
+  static INT_PTR dialog_box_indirect_param(message_handler& handler, HINSTANCE instance, LPCDLGTEMPLATEW dialog_template, HWND parent, LPARAM init_param) {
+    dialog_box_indirect_params param_shim{handler, init_param};
+    return DialogBoxIndirectParamW(instance, dialog_template, parent, &dialog_proc, reinterpret_cast<LPARAM>(&init_param));
+  }
 
   /*
      The standard Windows event loop
@@ -39,7 +54,7 @@ public:
     }
   }
 
-  static LRESULT CALLBACK def_window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+  static LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     auto result = call_handler(hwnd, msg, wparam, lparam);
     return result.value_or(DefWindowProcW(hwnd, msg, wparam, lparam));
   }
@@ -69,17 +84,39 @@ public:
   }
 
 private:
+  struct create_window_params {
+    message_handler& handler;
+    LPVOID original_create_params;
+  };
+
+  struct dialog_box_indirect_params {
+    message_handler& handler;
+    LPARAM original_init_param;
+  };
+
   static std::optional<LRESULT> call_handler(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     if (msg == WM_NCCREATE) {
-      auto create_struct = reinterpret_cast<CREATESTRUCTW*>(lparam);
-      auto create_params = reinterpret_cast<message_handler::create_params*>(create_struct->lpCreateParams);
-      create_struct->lpCreateParams = create_params->original_create_params;
+      nccreate_params params{wparam, lparam};
+      auto create_params = reinterpret_cast<create_window_params*>(params.createstruct()->lpCreateParams);
+      params.createstruct()->lpCreateParams = create_params->original_create_params;
+
+      auto inserted = handlers().insert({hwnd, create_params->handler});
+      assert(inserted.second);
 
       auto ret = create_params->handler.call_handler(hwnd, msg, wparam, lparam);
-      if (ret.value_or(true))
-        handlers().insert({hwnd, create_params->handler});
+
+      // if the WM_NCCREATE handler returns FALSE then remove the handler
+      if (ret.has_value() && ret.value() == 0)
+        handlers().erase(inserted.first);
 
       return ret;
+    } else if (msg == WM_INITDIALOG) {
+      auto init_params = reinterpret_cast<dialog_box_indirect_params*>(lparam);
+
+      auto inserted = handlers().insert({hwnd, init_params->handler});
+      assert(inserted.second);
+
+      return init_params->handler.call_handler(hwnd, msg, wparam, init_params->original_init_param);
     } else {
       auto match = handlers().find(hwnd);
       if (match == handlers().end()) {
