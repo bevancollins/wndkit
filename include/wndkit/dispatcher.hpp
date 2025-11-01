@@ -14,13 +14,6 @@ namespace wndkit {
 
 class dispatcher {
 public:
-  static void subclass_window(HWND hwnd, message_handler& handler, UINT_PTR id_subclass = {}, DWORD_PTR ref_data = {}) {
-    if (!SetWindowSubclass(hwnd, wndkit::dispatcher::sub_class_proc, id_subclass, ref_data))
-      throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
-
-    attach_window(hwnd, handler);
-  }
-
   /*
       Create a window and attach a message handler
    */
@@ -35,6 +28,23 @@ public:
   static INT_PTR dialog_box_indirect_param(message_handler& handler, HINSTANCE instance, LPCDLGTEMPLATEW dialog_template, HWND parent, LPARAM init_param) {
     dialog_box_indirect_params param_shim{handler, init_param};
     return DialogBoxIndirectParamW(instance, dialog_template, parent, &dialog_proc, reinterpret_cast<LPARAM>(&init_param));
+  }
+
+  /*
+      Create and subclass a window, then attach a message handler
+   */
+  static HWND create_subclass_window(message_handler& handler, DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params, UINT_PTR id_subclass = {}, DWORD_PTR ref_data = {}) {
+    assert(class_name);
+
+    auto hwnd = CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, params);
+    if (hwnd) {
+      if (!SetWindowSubclass(hwnd, &sub_class_proc, id_subclass, ref_data))
+        throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
+
+      attach_window(hwnd, handler);
+    }
+
+    return hwnd;
   }
 
   /*
@@ -75,7 +85,6 @@ private:
     return handlers_;
   }
 
-public:
   static void attach_window(HWND hwnd, message_handler& handler) {
     assert(hwnd);
 
@@ -83,7 +92,6 @@ public:
     assert(inserted.second);
   }
 
-private:
   struct create_window_params {
     message_handler& handler;
     LPVOID original_create_params;

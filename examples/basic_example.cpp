@@ -11,12 +11,11 @@
 class ticker {
 public:
   void create(HWND parent, int x, int y, int width, int height, HINSTANCE instance) {
-    hwnd_ = CreateWindowW(
-        WC_STATICW, {},
+    hwnd_ = wndkit::dispatcher::create_subclass_window(message_handler_,
+        {}, WC_STATICW, {},
         WS_CHILD | WS_VISIBLE,
         x, y, width, height,
         parent, {}, instance, {});
-    wndkit::dispatcher::subclass_window(hwnd_, message_handler_);
 
     message_handler_.on_message<WM_TIMER>([this](HWND, const auto&) {
       tick();
