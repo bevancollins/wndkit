@@ -19,7 +19,11 @@ public:
    */
   static HWND create_window(message_handler& handler, DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params) {
     create_window_params param_shim{handler, params};
-    return CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, &param_shim);
+    auto hwnd = CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, &param_shim);
+    if (!hwnd)
+      throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
+
+    return hwnd;
   }
 
   /*
