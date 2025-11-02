@@ -17,7 +17,7 @@ public:
   /*
       Create a window and attach a message handler
    */
-  static HWND create_window(message_handler& handler, DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params) {
+  static HWND create_window(message_handler* handler, DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params) {
     create_window_params param_shim{handler, params};
     auto hwnd = CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, &param_shim);
     if (!hwnd)
@@ -29,15 +29,15 @@ public:
   /*
       Create a dialog and attach a message handler
    */
-  static INT_PTR dialog_box_indirect_param(message_handler& handler, HINSTANCE instance, LPCDLGTEMPLATEW dialog_template, HWND parent, LPARAM init_param) {
+  static INT_PTR dialog_box_indirect_param(message_handler* handler, HINSTANCE instance, LPCDLGTEMPLATEW dialog_template, HWND parent, LPARAM init_param) {
     dialog_box_indirect_params param_shim{handler, init_param};
-    return DialogBoxIndirectParamW(instance, dialog_template, parent, &dialog_proc, reinterpret_cast<LPARAM>(&init_param));
+    return DialogBoxIndirectParamW(instance, dialog_template, parent, &dialog_proc, reinterpret_cast<LPARAM>(&param_shim));
   }
 
   /*
       Create and subclass a window, then attach a message handler
    */
-  static HWND create_subclass_window(message_handler& handler, DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params, UINT_PTR id_subclass = {}, DWORD_PTR ref_data = {}) {
+  static HWND create_subclass_window(message_handler* handler, DWORD ex_style, const wchar_t* class_name, const wchar_t* window_name, DWORD style, int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID params, UINT_PTR id_subclass = {}, DWORD_PTR ref_data = {}) {
     assert(class_name);
 
     auto hwnd = CreateWindowExW(ex_style, class_name, window_name, style, x, y, width, height, parent, menu, instance, params);
@@ -87,11 +87,11 @@ private:
   }
 
   static auto& handlers() {
-    thread_local static std::unordered_map<HWND, message_handler&> handlers_;
+    thread_local static std::unordered_map<HWND, message_handler*> handlers_;
     return handlers_;
   }
 
-  static void attach_window(HWND hwnd, message_handler& handler) {
+  static void attach_window(HWND hwnd, message_handler* handler) {
     assert(hwnd);
 
     auto inserted = handlers().insert({hwnd, handler});
@@ -99,12 +99,12 @@ private:
   }
 
   struct create_window_params {
-    message_handler& handler;
+    message_handler* handler;
     LPVOID original_create_params;
   };
 
   struct dialog_box_indirect_params {
-    message_handler& handler;
+    message_handler* handler;
     LPARAM original_init_param;
   };
 
@@ -117,7 +117,7 @@ private:
       auto inserted = handlers().insert({hwnd, create_params->handler});
       assert(inserted.second);
 
-      auto ret = create_params->handler.call_handler(hwnd, msg, wparam, lparam);
+      auto ret = create_params->handler->call_handler(hwnd, msg, wparam, lparam);
 
       // if the WM_NCCREATE handler returns FALSE then remove the handler
       if (ret.has_value() && ret.value() == 0)
@@ -130,13 +130,13 @@ private:
       auto inserted = handlers().insert({hwnd, init_params->handler});
       assert(inserted.second);
 
-      return init_params->handler.call_handler(hwnd, msg, wparam, init_params->original_init_param);
+      return init_params->handler->call_handler(hwnd, msg, wparam, init_params->original_init_param);
     } else {
       auto match = handlers().find(hwnd);
       if (match == handlers().end()) {
         return std::nullopt;
       } else {
-        auto ret = match->second.call_handler(hwnd, msg, wparam, lparam);
+        auto ret = match->second->call_handler(hwnd, msg, wparam, lparam);
 
         if (msg == WM_NCDESTROY)
           handlers().erase(match);

@@ -11,7 +11,7 @@
 class ticker {
 public:
   void create(HWND parent, int x, int y, int width, int height, HINSTANCE instance) {
-    hwnd_ = wndkit::dispatcher::create_subclass_window(message_handler_,
+    hwnd_ = wndkit::dispatcher::create_subclass_window(&message_handler_,
         {}, WC_STATICW, {},
         WS_CHILD | WS_VISIBLE,
         x, y, width, height,
@@ -60,7 +60,7 @@ public:
 
   template<typename... Args>
   decltype(auto) create(Args&&... args) {
-    return wndkit::dispatcher::create_window(message_handler_, std::forward<Args>(args)...);
+    return wndkit::dispatcher::create_window(&message_handler_, std::forward<Args>(args)...);
   }
 
 private:
