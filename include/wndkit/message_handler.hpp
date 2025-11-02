@@ -162,7 +162,7 @@ public:
       using param_type = typename details::notify_traits<Code>::param_type;
       using handler_result_type = std::invoke_result_t<Handler, HWND, const param_type&>;
 
-      auto specialised_params = &reinterpret_cast<const param_type&>(params.nmhdr());
+      auto specialised_params = reinterpret_cast<const param_type*>(params.nmhdr());
 
       if constexpr (std::is_same_v<handler_result_type, void>) {
         handler(hwnd, *specialised_params);
