@@ -39,7 +39,7 @@ public:
        A reference to the `message_handler` to support method chaining.
 
      Example:
-       handler.on_message<WM_PAINT>([](HWND hwnd, const paint_params& params) {
+       handler.on_message<WM_PAINT>([](HWND hwnd, paint_params& params) {
          // handle WM_PAINT
        });
   */
@@ -47,10 +47,10 @@ public:
   requires details::message_params_compatible<typename details::message_traits<Msg>::param_type>
   message_handler& on_message(Handler&& handler, Filter filter = {}) {
     using param_type = typename details::message_traits<Msg>::param_type;
-    using handler_result_type = std::invoke_result_t<Handler, HWND, const param_type&>;
+    using handler_result_type = std::invoke_result_t<Handler, HWND, param_type&>;
 
-    handlers_[Msg].push_back([handler = std::forward<Handler>(handler), filter = std::move(filter)](HWND hwnd, const message_params& params) mutable -> std::optional<LRESULT> {
-        auto& specialised_params = static_cast<const param_type&>(params);
+    handlers_[Msg].push_back([handler = std::forward<Handler>(handler), filter = std::move(filter)](HWND hwnd, message_params& params) mutable -> std::optional<LRESULT> {
+        auto& specialised_params = static_cast<param_type&>(params);
 
         if (!filter.matches(specialised_params))
           return std::nullopt;
@@ -84,7 +84,7 @@ public:
   template<UINT Msg, typename Handler, typename Filter = no_filter>
   requires std::invocable<Handler>
   message_handler& on_message_invoke(Handler&& handler, Filter filter = {}) {
-    return on_message<Msg>([handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
+    return on_message<Msg>([handler = std::forward<Handler>(handler)](HWND, auto&) mutable {
         std::invoke(handler);
       }, std::move(filter));
   }
@@ -107,7 +107,7 @@ public:
   message_handler& on_message_invoke(Handler&& handler, Args&&... args) {
     return on_message<Msg>(
         [handler = std::forward<Handler>(handler),
-        ...captured_args = std::forward<Args>(args)](HWND hwnd, const auto&) mutable {
+        ...captured_args = std::forward<Args>(args)](HWND hwnd, auto&) mutable {
       std::invoke(handler, hwnd, captured_args...);
     });
   }
@@ -130,7 +130,7 @@ public:
   message_handler& on_message_invoke(Handler&& handler, Args&&... args) {
     return on_message<Msg>(
         [handler = std::forward<Handler>(handler),
-        ...captured_args = std::forward<Args>(args)](HWND, const auto&) mutable {
+        ...captured_args = std::forward<Args>(args)](HWND, auto&) mutable {
       std::invoke(handler, captured_args...);
     });
   }
@@ -146,10 +146,10 @@ public:
      The handler must accept the HWND and a specialized notification parameter as arguments.
 
      Examples:
-       on_notify<TVN_SELCHANGED>(IDC_METHODS, [](HWND hwnd, const NMTREEVIEWW* params) {
+       on_notify<TVN_SELCHANGED>(IDC_METHODS, [](HWND hwnd, NMTREEVIEWW* params) {
          // Handle tree-view selection change.
        });
-       on_notify<DL_DROPPED>(IDC_LIST, [](HWND hwnd, const DRAGLISTINFO* params) {
+       on_notify<DL_DROPPED>(IDC_LIST, [](HWND hwnd, DRAGLISTINFO* params) {
          // Handle button click event.
        });
 
@@ -158,11 +158,11 @@ public:
   */
   template<UINT Code, typename Handler>
   message_handler& on_notify(UINT_PTR control_id, Handler&& handler) {
-    return on_message<WM_NOTIFY>([handler = std::forward<Handler>(handler)](HWND hwnd, const notify_params& params) mutable {
+    return on_message<WM_NOTIFY>([handler = std::forward<Handler>(handler)](HWND hwnd, notify_params& params) mutable {
       using param_type = typename details::notify_traits<Code>::param_type;
-      using handler_result_type = std::invoke_result_t<Handler, HWND, const param_type&>;
+      using handler_result_type = std::invoke_result_t<Handler, HWND, param_type&>;
 
-      auto specialised_params = reinterpret_cast<const param_type*>(params.nmhdr());
+      auto specialised_params = reinterpret_cast<param_type*>(params.nmhdr());
 
       if constexpr (std::is_same_v<handler_result_type, void>) {
         handler(hwnd, *specialised_params);
@@ -195,7 +195,7 @@ public:
   template<UINT Code, typename Handler>
   requires std::invocable<Handler>
   message_handler& on_notify_invoke(UINT_PTR control_id, Handler&& handler) {
-    return on_notify<Code>(control_id, [handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
+    return on_notify<Code>(control_id, [handler = std::forward<Handler>(handler)](HWND, auto&) mutable {
         std::invoke(handler);
       });
   }
@@ -207,11 +207,11 @@ public:
      Internally, this uses a filter to match only WM_COMMAND messages with the given control ID.
 
      Example:
-       on_command(IDOK, [](HWND hwnd, const auto&) {
+       on_command(IDOK, [](HWND hwnd, auto&) {
          EndDialog(hwnd, IDOK);
        });
 
-     The handler must be invocable as: handler(HWND, const command_message_params&)
+     The handler must be invocable as: handler(HWND, command_message_params&)
   */
   template<typename Handler>
   message_handler& on_command(WORD id, Handler&& handler) {
@@ -235,7 +235,7 @@ public:
   template<typename Handler>
   requires std::invocable<Handler>
   message_handler& on_command_invoke(WORD id, Handler&& handler) {
-    return on_command(id, [handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
+    return on_command(id, [handler = std::forward<Handler>(handler)](HWND, auto&) mutable {
         std::invoke(handler);
       });
   }
@@ -258,7 +258,7 @@ public:
   message_handler& on_command_invoke(WORD id, Handler&& handler, Args&&... args) {
     return on_command(id,
         [handler = std::forward<Handler>(handler),
-        ...captured_args = std::forward<Args>(args)](HWND hwnd, const auto&) mutable {
+        ...captured_args = std::forward<Args>(args)](HWND hwnd, auto&) mutable {
       std::invoke(handler, hwnd, captured_args...);
     });
   }
@@ -282,7 +282,7 @@ public:
   message_handler& on_command_invoke(WORD id, Handler&& handler, Args&&... args) {
     return on_command(id,
         [handler = std::forward<Handler>(handler),
-        ...captured_args = std::forward<Args>(args)](HWND, const auto&) mutable {
+        ...captured_args = std::forward<Args>(args)](HWND, auto&) mutable {
       std::invoke(handler, captured_args...);
     });
   }
@@ -295,12 +295,12 @@ public:
      This is useful for handling control notifications like `BN_CLICKED` for buttons or
      `EN_CHANGE` for edit controls, in a type-safe way.
 
-     The handler must be invocable as: `handler(HWND, const command_params&)`.
+     The handler must be invocable as: `handler(HWND, command_params&)`.
 
      If the handler returns `void`, this wrapper will automatically return 0 to Windows.
 
      Examples:
-       on_command_notify<BN_CLICKED>(IDC_MY_BUTTON, [](HWND hwnd, const command_params& params) {
+       on_command_notify<BN_CLICKED>(IDC_MY_BUTTON, [](HWND hwnd, command_params& params) {
          MessageBox(hwnd, L"Button clicked", L"Info", MB_OK);
        });
 
@@ -309,8 +309,8 @@ public:
   */
   template<WORD NotifCode, typename Handler>
   message_handler& on_command_notify(WORD id, Handler&& handler) {
-    return on_message<WM_COMMAND>([handler = std::forward<Handler>(handler)](HWND hwnd, const command_params& params) mutable {
-      using handler_result_type = std::invoke_result_t<Handler, HWND, const command_params&>;
+    return on_message<WM_COMMAND>([handler = std::forward<Handler>(handler)](HWND hwnd, command_params& params) mutable {
+      using handler_result_type = std::invoke_result_t<Handler, HWND, command_params&>;
 
       if constexpr (std::is_same_v<handler_result_type, void>) {
         handler(hwnd, params);
@@ -340,7 +340,7 @@ public:
   template<WORD NotifyCode, typename Handler>
   requires std::invocable<Handler>
   message_handler& on_command_notify_invoke(WORD id, Handler&& handler) {
-    return on_command_notify<NotifyCode>(id, [handler = std::forward<Handler>(handler)](HWND, const auto&) mutable {
+    return on_command_notify<NotifyCode>(id, [handler = std::forward<Handler>(handler)](HWND, auto&) mutable {
         std::invoke(handler);
       });
   }
@@ -371,7 +371,7 @@ public:
   }
 
 private:
-  using handler_fn = std::function<std::optional<LRESULT>(HWND, const message_params&)>;
+  using handler_fn = std::function<std::optional<LRESULT>(HWND, message_params&)>;
   std::unordered_map<UINT, std::vector<handler_fn>> handlers_;
 };
 
