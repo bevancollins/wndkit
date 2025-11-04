@@ -1,20 +1,27 @@
 #pragma once
 
 #include <windows.h>
+#include <WebView2.h>
+#include <wrl.h>
 #include <memory>
 #include <string>
 #include <system_error>
 #include <wil/resource.h>
-#include <wil/com.h>
-#include <wrl.h>
-#include <WebView2.h>
 #include <wndkit/dispatcher.hpp>
 #include <wndkit/message_handler.hpp>
+#include <wndkit/details/message_traits.hpp>
 
 namespace wndkit::widgets {
 
 class web_view {
 public:
+  static constexpr UINT WM_NAVIAGATION_COMPLETED = WM_USER + 0x00;
+
+  struct navigation_completed_params : public wndkit::message_params {
+    bool is_success() const { return wparam != FALSE; }
+    void set_success(bool f) { wparam = f ? TRUE : FALSE; }
+  };
+
   web_view() {
     settings_ = std::make_shared<unbound_settings>();
   }
@@ -146,6 +153,16 @@ public:
       pending_url_ = url;
   }
 
+  std::wstring url() {
+    if (webview_) {
+      wil::unique_cotaskmem_string url;
+      webview_->get_Source(&url);
+      return url.get();
+    } else {
+      return pending_url_;
+    }
+  }
+
   void reload() {
     if (webview_)
       webview_->Reload();
@@ -178,6 +195,21 @@ private:
                 webview_controller_.Reset();
                 return S_OK;
               }
+
+              webview_->add_NavigationCompleted(
+                Microsoft::WRL::Callback<ICoreWebView2NavigationCompletedEventHandler>(
+                  [this, hwnd](ICoreWebView2*, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
+                  BOOL is_success{};
+                  args->get_IsSuccess(&is_success);
+
+                  navigation_completed_params params;
+                  params.set_success(!!is_success);
+
+                  PostMessageW(GetParent(hwnd), WM_NAVIAGATION_COMPLETED, params.wparam, params.lparam);
+
+                  return S_OK;
+
+                }).Get(), nullptr);
 
               // update the settings
               Microsoft::WRL::ComPtr<ICoreWebView2Settings> web_view_settings;
@@ -230,3 +262,8 @@ private:
 };
 
 }
+
+template<>
+struct wndkit::details::message_traits<wndkit::widgets::web_view::WM_NAVIAGATION_COMPLETED> {
+  using param_type = wndkit::widgets::web_view::navigation_completed_params;
+};
