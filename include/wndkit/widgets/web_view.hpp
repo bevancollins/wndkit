@@ -18,8 +18,44 @@ public:
   static constexpr UINT WM_NAVIAGATION_COMPLETED = WM_USER + 0x00;
 
   struct navigation_completed_params : public wndkit::message_params {
-    bool is_success() const { return wparam != FALSE; }
-    void set_success(bool f) { wparam = f ? TRUE : FALSE; }
+    navigation_completed_params(ICoreWebView2NavigationCompletedEventArgs* args) {
+      BOOL is_success{};
+      args->get_IsSuccess(&is_success);
+      set_success(!!is_success);
+
+      COREWEBVIEW2_WEB_ERROR_STATUS status{};
+      args->get_WebErrorStatus(&status);
+      set_web_error_status(status);
+
+      UINT64 navigation_id{};
+      args->get_NavigationId(&navigation_id);
+      set_navigation_id(navigation_id);
+    }
+
+    bool is_success() const {
+      return LOWORD(wparam) != FALSE;
+    }
+
+    COREWEBVIEW2_WEB_ERROR_STATUS web_error_status() const {
+      return static_cast<COREWEBVIEW2_WEB_ERROR_STATUS>(HIWORD(wparam));
+    }
+
+    UINT64 navigation_id() {
+      return static_cast<UINT64>(lparam);
+    }
+
+    private:
+    void set_success(bool f) {
+      wparam = MAKELONG(LOWORD(f ? TRUE : FALSE), HIWORD(wparam));
+    }
+
+    void set_web_error_status(COREWEBVIEW2_WEB_ERROR_STATUS status) {
+      wparam = MAKELONG(LOWORD(wparam), HIWORD(static_cast<LPARAM>(status)));
+    }
+
+    void set_navigation_id(UINT64 id) {
+      lparam = static_cast<LPARAM>(id);
+    }
   };
 
   web_view() {
@@ -149,8 +185,14 @@ public:
     if (webview_)
       webview_->Navigate(url.c_str());
     else
-      // store pending url in case webview not ready yet
       pending_url_ = url;
+  }
+
+  void navigate_html(const std::wstring& html) {
+    if (webview_)
+      webview_->NavigateToString(html.c_str());
+    else
+      pending_html_ = html;
   }
 
   std::wstring url() {
@@ -199,12 +241,7 @@ private:
               webview_->add_NavigationCompleted(
                 Microsoft::WRL::Callback<ICoreWebView2NavigationCompletedEventHandler>(
                   [this, hwnd](ICoreWebView2*, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
-                  BOOL is_success{};
-                  args->get_IsSuccess(&is_success);
-
-                  navigation_completed_params params;
-                  params.set_success(!!is_success);
-
+                  navigation_completed_params params(args);
                   PostMessageW(GetParent(hwnd), WM_NAVIAGATION_COMPLETED, params.wparam, params.lparam);
 
                   return S_OK;
@@ -221,6 +258,8 @@ private:
               // navigate pending url if present
               if (!pending_url_.empty())
                 webview_->Navigate(pending_url_.c_str());
+              else if (!pending_html_.empty())
+                webview_->NavigateToString(pending_html_.c_str());
 
               return S_OK;
             }).Get());
@@ -256,6 +295,7 @@ private:
 
   wndkit::message_handler message_handler_;
   std::wstring pending_url_;
+  std::wstring pending_html_;
   std::shared_ptr<settings_t> settings_;
   Microsoft::WRL::ComPtr<ICoreWebView2Controller> webview_controller_;
   Microsoft::WRL::ComPtr<ICoreWebView2> webview_;
