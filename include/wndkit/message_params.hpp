@@ -29,8 +29,8 @@
 namespace wndkit {
 
 struct message_params {
-  WPARAM wparam;
-  LPARAM lparam;
+  WPARAM wparam{};
+  LPARAM lparam{};
 };
 
 struct pos_params : public message_params {
