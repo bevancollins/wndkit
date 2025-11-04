@@ -15,48 +15,30 @@ namespace wndkit::widgets {
 
 class web_view {
 public:
-  static constexpr UINT WM_NAVIAGATION_COMPLETED = WM_USER + 0x00;
+  static constexpr UINT WM_NAVIGATION_STARTING    = WM_USER + 0x00;
+  static constexpr UINT WM_NAVIGATION_COMPLETED   = WM_USER + 0x01;
+  static constexpr UINT WM_WINDOW_CLOSE_REQUESTED = WM_USER + 0x02;
+  static constexpr UINT WM_DOCUMENT_TITLE_CHANGED = WM_USER + 0x03;
+  static constexpr UINT WM_CONTENT_LOADING        = WM_USER + 0x04;
 
-  struct navigation_completed_params : public wndkit::message_params {
-    navigation_completed_params(ICoreWebView2NavigationCompletedEventArgs* args) {
-      BOOL is_success{};
-      args->get_IsSuccess(&is_success);
-      set_success(!!is_success);
+  template<typename EventArgs>
+  struct web_view_message_params : public wndkit::message_params {
+    using event_args_type = EventArgs;
 
-      COREWEBVIEW2_WEB_ERROR_STATUS status{};
-      args->get_WebErrorStatus(&status);
-      set_web_error_status(status);
-
-      UINT64 navigation_id{};
-      args->get_NavigationId(&navigation_id);
-      set_navigation_id(navigation_id);
+    web_view_message_params(event_args_type* args) {
+      lparam = reinterpret_cast<LPARAM>(args);
     }
 
-    bool is_success() const {
-      return LOWORD(wparam) != FALSE;
-    }
-
-    COREWEBVIEW2_WEB_ERROR_STATUS web_error_status() const {
-      return static_cast<COREWEBVIEW2_WEB_ERROR_STATUS>(HIWORD(wparam));
-    }
-
-    UINT64 navigation_id() {
-      return static_cast<UINT64>(lparam);
-    }
-
-    private:
-    void set_success(bool f) {
-      wparam = MAKELONG(LOWORD(f ? TRUE : FALSE), HIWORD(wparam));
-    }
-
-    void set_web_error_status(COREWEBVIEW2_WEB_ERROR_STATUS status) {
-      wparam = MAKELONG(LOWORD(wparam), HIWORD(static_cast<LPARAM>(status)));
-    }
-
-    void set_navigation_id(UINT64 id) {
-      lparam = static_cast<LPARAM>(id);
+    auto args() {
+      return reinterpret_cast<event_args_type*>(lparam);
     }
   };
+
+  using navigation_starting_params    = web_view_message_params<ICoreWebView2NavigationStartingEventArgs>;
+  using navigation_completed_params   = web_view_message_params<ICoreWebView2NavigationCompletedEventArgs>;
+  using window_close_requested_params = web_view_message_params<IUnknown>;
+  using document_title_changed_params = web_view_message_params<IUnknown>;
+  using content_loading_params        = web_view_message_params<ICoreWebView2ContentLoadingEventArgs>;
 
   web_view() {
     settings_ = std::make_shared<unbound_settings>();
@@ -210,6 +192,11 @@ public:
       webview_->Reload();
   }
 
+  void stop() {
+    if (webview_)
+      webview_->Stop();
+  }
+
   void execute_script(const std::wstring& script) {
     if (webview_)
       webview_->ExecuteScript(script.c_str(), nullptr);
@@ -238,15 +225,25 @@ private:
                 return S_OK;
               }
 
-              webview_->add_NavigationCompleted(
-                Microsoft::WRL::Callback<ICoreWebView2NavigationCompletedEventHandler>(
-                  [this, hwnd](ICoreWebView2*, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
-                  navigation_completed_params params(args);
-                  PostMessageW(GetParent(hwnd), WM_NAVIAGATION_COMPLETED, params.wparam, params.lparam);
+              webview_->add_NavigationStarting(create_callback<
+                  ICoreWebView2NavigationStartingEventHandler, WM_NAVIGATION_STARTING
+                >(hwnd).Get(), nullptr);
 
-                  return S_OK;
+              webview_->add_NavigationCompleted(create_callback<
+                  ICoreWebView2NavigationCompletedEventHandler, WM_NAVIGATION_COMPLETED
+                >(hwnd).Get(), nullptr);
 
-                }).Get(), nullptr);
+              webview_->add_WindowCloseRequested(create_callback<
+                  ICoreWebView2WindowCloseRequestedEventHandler, WM_WINDOW_CLOSE_REQUESTED
+                >(hwnd).Get(), nullptr);
+
+              webview_->add_DocumentTitleChanged(create_callback<
+                  ICoreWebView2DocumentTitleChangedEventHandler, WM_DOCUMENT_TITLE_CHANGED
+                >(hwnd).Get(), nullptr);
+
+              webview_->add_ContentLoading(create_callback<
+                  ICoreWebView2ContentLoadingEventHandler, WM_CONTENT_LOADING
+                >(hwnd).Get(), nullptr);
 
               // update the settings
               Microsoft::WRL::ComPtr<ICoreWebView2Settings> web_view_settings;
@@ -267,6 +264,16 @@ private:
       }).Get();
 
     CreateCoreWebView2Environment(cb_env.Get());
+  }
+
+  template<typename Handler, UINT Msg>
+  static Microsoft::WRL::ComPtr<Handler> create_callback(HWND hwnd) {
+    return Microsoft::WRL::Callback<Handler>(
+      [hwnd](ICoreWebView2*, typename wndkit::details::message_traits<Msg>::param_type::event_args_type* args) -> HRESULT {
+        typename wndkit::details::message_traits<Msg>::param_type params{args};
+        SendMessageW(GetParent(hwnd), Msg, params.wparam, params.lparam);
+        return S_OK;
+      });
   }
 
   void replace_settings(std::shared_ptr<settings_t> new_settings) {
@@ -304,6 +311,26 @@ private:
 }
 
 template<>
-struct wndkit::details::message_traits<wndkit::widgets::web_view::WM_NAVIAGATION_COMPLETED> {
+struct wndkit::details::message_traits<wndkit::widgets::web_view::WM_NAVIGATION_STARTING> {
+  using param_type = wndkit::widgets::web_view::navigation_starting_params;
+};
+
+template<>
+struct wndkit::details::message_traits<wndkit::widgets::web_view::WM_NAVIGATION_COMPLETED> {
   using param_type = wndkit::widgets::web_view::navigation_completed_params;
+};
+
+template<>
+struct wndkit::details::message_traits<wndkit::widgets::web_view::WM_WINDOW_CLOSE_REQUESTED> {
+  using param_type = wndkit::widgets::web_view::window_close_requested_params;
+};
+
+template<>
+struct wndkit::details::message_traits<wndkit::widgets::web_view::WM_DOCUMENT_TITLE_CHANGED> {
+  using param_type = wndkit::widgets::web_view::document_title_changed_params;
+};
+
+template<>
+struct wndkit::details::message_traits<wndkit::widgets::web_view::WM_CONTENT_LOADING> {
+  using param_type = wndkit::widgets::web_view::content_loading_params;
 };
