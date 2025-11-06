@@ -36,12 +36,24 @@ public:
       .on_message_invoke<WM_LBUTTONUP>([this]()  { on_button_up(); });
   }
 
-  void set_url(const auto& url) {
-    url_ = url;
-    if (hwnd_) InvalidateRect(hwnd_, nullptr, TRUE);
+  void set_text(const auto& text) {
+    text_ = text;
+
+    InvalidateRect(hwnd_, nullptr, TRUE);
   }
 
-  std::wstring url() const {
+  auto text() const {
+    return text_;
+  }
+
+  void set_url(const auto& url) {
+    url_ = url;
+    set_tooltip(url_);
+
+    InvalidateRect(hwnd_, nullptr, TRUE);
+  }
+
+  auto url() const {
     return url_;
   }
 
@@ -62,6 +74,30 @@ public:
   }
 
 private:
+  void set_tooltip(const std::wstring& text) {
+    // Create tooltip if needed
+    if (!tooltip_hwnd_) {
+      tooltip_hwnd_ = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
+                                      WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX,
+                                      CW_USEDEFAULT, CW_USEDEFAULT,
+                                      CW_USEDEFAULT, CW_USEDEFAULT,
+                                      hwnd_, nullptr,
+                                      GetModuleHandleW(nullptr), nullptr);
+
+      SetWindowPos(tooltip_hwnd_, HWND_TOPMOST, 0, 0, 0, 0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
+
+    TOOLINFOW ti{};
+    ti.cbSize = sizeof(ti);
+    ti.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+    ti.hwnd = GetParent(hwnd_);
+    ti.uId = reinterpret_cast<UINT_PTR>(hwnd_);
+    ti.lpszText = const_cast<wchar_t*>(text.c_str());
+
+    SendMessageW(tooltip_hwnd_, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
+  }
+
   void on_paint() {
     PAINTSTRUCT ps{};
     HDC hdc = BeginPaint(hwnd_, &ps);
@@ -81,7 +117,9 @@ private:
       color = unvisited_color_;
 
     SetTextColor(hdc, color);
-    DrawTextW(hdc, url_.c_str(), static_cast<int>(url_.length()), &rc, DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+    std::wstring& text = text_.empty() ? url_ : text_;
+
+    DrawTextW(hdc, text.c_str(), static_cast<int>(text.length()), &rc, DT_SINGLELINE | DT_VCENTER | DT_LEFT);
 
     SelectObject(hdc, old_font);
     EndPaint(hwnd_, &ps);
@@ -137,6 +175,8 @@ private:
   wil::unique_hfont font_;
 
   HWND hwnd_{};
+  HWND tooltip_hwnd_{};
+  std::wstring text_;
   std::wstring url_;
 };
 
