@@ -632,4 +632,10 @@ struct quit_params : public message_params {
   [[nodiscard]] int exit_code() const noexcept { return static_cast<int>(wparam); }
 };
 
+struct dpichanged_params : public message_params {
+  [[nodiscard]] WORD dpi_x() const noexcept { return LOWORD(wparam); }
+  [[nodiscard]] WORD dpi_y() const noexcept { return HIWORD(wparam); }
+  [[nodiscard]] RECT* suggested_rect() const noexcept { return reinterpret_cast<RECT*>(lparam); }
+};
+
 }

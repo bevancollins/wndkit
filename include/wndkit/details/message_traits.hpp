@@ -650,4 +650,9 @@ struct message_traits<WM_WINDOWPOSCHANGING> {
   using param_type = windowposchanging_params;
 };
 
+template<>
+struct message_traits<WM_DPICHANGED> {
+  using param_type = dpichanged_params;
+};
+
 }
