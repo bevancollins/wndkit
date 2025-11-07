@@ -15,8 +15,6 @@ public:
   hyperlink() = default;
 
   void create(HWND parent, int x, int y, int width, int height, ATOM atom) {
-    font_ = create_font();
-
     hwnd_ = wndkit::dispatcher::create_window(&message_handler_,
       0,
       reinterpret_cast<LPCWSTR>(static_cast<WORD>(atom)),
@@ -33,7 +31,10 @@ public:
       .on_message_invoke<WM_MOUSEMOVE>([this]()  { on_mouse_move(); })
       .on_message_invoke<WM_MOUSELEAVE>([this]() { on_mouse_leave(); })
       .on_message_invoke<WM_LBUTTONDOWN>([this](){ on_button_down(); })
-      .on_message_invoke<WM_LBUTTONUP>([this]()  { on_button_up(); });
+      .on_message_invoke<WM_LBUTTONUP>([this]()  { on_button_up(); })
+      .on_message<WM_SETFONT>([this](HWND, const auto& params) {
+        on_set_font(params);
+      });
   }
 
   void set_text(const auto& text) {
@@ -77,22 +78,24 @@ private:
   void set_tooltip(const std::wstring& text) {
     // Create tooltip if needed
     if (!tooltip_hwnd_) {
-      tooltip_hwnd_ = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
-                                      WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX,
-                                      CW_USEDEFAULT, CW_USEDEFAULT,
-                                      CW_USEDEFAULT, CW_USEDEFAULT,
-                                      hwnd_, nullptr,
-                                      GetModuleHandleW(nullptr), nullptr);
+      tooltip_hwnd_ = CreateWindowExW(
+          WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
+          WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX,
+          CW_USEDEFAULT, CW_USEDEFAULT,
+          CW_USEDEFAULT, CW_USEDEFAULT,
+          hwnd_, nullptr,
+          GetModuleHandleW(nullptr), nullptr);
 
-      SetWindowPos(tooltip_hwnd_, HWND_TOPMOST, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+      SetWindowPos(
+          tooltip_hwnd_, HWND_TOPMOST, 0, 0, 0, 0,
+          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
 
     TOOLINFOW ti{};
-    ti.cbSize = sizeof(ti);
-    ti.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
-    ti.hwnd = GetParent(hwnd_);
-    ti.uId = reinterpret_cast<UINT_PTR>(hwnd_);
+    ti.cbSize   = sizeof(ti);
+    ti.uFlags   = TTF_IDISHWND | TTF_SUBCLASS;
+    ti.hwnd     = hwnd_;
+    ti.uId      = reinterpret_cast<UINT_PTR>(hwnd_);
     ti.lpszText = const_cast<wchar_t*>(text.c_str());
 
     SendMessageW(tooltip_hwnd_, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ti));
@@ -105,7 +108,7 @@ private:
     RECT rc{};
     GetClientRect(hwnd_, &rc);
 
-    auto old_font = SelectObject(hdc, font_.get());
+    auto old_font = wil::SelectObject(hdc, font_);
     SetBkMode(hdc, TRANSPARENT);
 
     COLORREF color{};
@@ -121,7 +124,6 @@ private:
 
     DrawTextW(hdc, text.c_str(), static_cast<int>(text.length()), &rc, DT_SINGLELINE | DT_VCENTER | DT_LEFT);
 
-    SelectObject(hdc, old_font);
     EndPaint(hwnd_, &ps);
   }
 
@@ -156,11 +158,10 @@ private:
     }
   }
 
-  wil::unique_hfont create_font() {
-    LOGFONTW lf{};
-    GetObjectW(GetStockObject(DEFAULT_GUI_FONT), sizeof(lf), &lf);
-    lf.lfUnderline = TRUE;
-    return wil::unique_hfont(CreateFontIndirectW(&lf));
+  void on_set_font(const setfont_params& params) {
+    font_ = params.hfont();
+    if (params.should_redraw())
+      InvalidateRect(hwnd_, nullptr, TRUE);
   }
 
   static constexpr COLORREF unvisited_color_ = RGB(0x00, 0x00, 0xEE);
@@ -172,10 +173,10 @@ private:
   bool button_down_{};
 
   wndkit::message_handler message_handler_;
-  wil::unique_hfont font_;
 
   HWND hwnd_{};
   HWND tooltip_hwnd_{};
+  HFONT font_{};
   std::wstring text_;
   std::wstring url_;
 };

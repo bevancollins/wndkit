@@ -27,6 +27,9 @@ if (TARGET WIL::WIL AND TARGET unofficial::webview2::webview2)
 
   add_library(wndkit_widgets INTERFACE
     include/wndkit/widgets/hyperlink.hpp
+    include/wndkit/widgets/layout.hpp
+    include/wndkit/widgets/main_window.hpp
+    include/wndkit/widgets/top_level_window.hpp
     include/wndkit/widgets/web_view.hpp
   )
   add_library(wndkit::widgets ALIAS wndkit_widgets)
