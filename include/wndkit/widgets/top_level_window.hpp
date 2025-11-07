@@ -26,7 +26,11 @@ public:
       })
       .on_message<WM_CLOSE>([this](HWND hwnd, const auto& params) {
         on_close(hwnd, params);
-      });
+      })
+      .on_message<WM_CTLCOLORSTATIC>([this](HWND hwnd, const auto& params) {
+        return on_ctlcolorstatic(hwnd, params);
+      })
+    ;
   }
 
   template<typename... Args>
@@ -61,6 +65,11 @@ protected:
     DestroyWindow(hwnd);
   }
 
+  virtual LRESULT on_ctlcolorstatic(HWND hwnd, const wndkit::ctlcolorstatic_params& params) {
+    SetBkMode(params.hdc(), TRANSPARENT);
+    return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_WINDOW));
+  }
+
   static wil::unique_hfont get_default_ui_font(UINT dpi) {
     NONCLIENTMETRICSW ncm{};
     ncm.cbSize = sizeof(ncm);
@@ -86,7 +95,7 @@ protected:
 
   wil::unique_hfont font_;
   wndkit::message_handler message_handler_;
-  wndkit::box_layout layout_;
+  box_layout layout_;
 };
 
 }

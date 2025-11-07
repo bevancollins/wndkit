@@ -125,8 +125,10 @@ struct create_params : public message_params {
 };
 
 struct ctlcolorbtn_params : public message_params {
-  HDC hdc() const   { return reinterpret_cast<HDC>(wparam); }
-  HWND hctl() const { return reinterpret_cast<HWND>(lparam); }
+  HDC hdc() const          { return reinterpret_cast<HDC>(wparam); }
+  void set_hdc(HDC hdc)    { wparam = reinterpret_cast<WPARAM>(hdc); }
+  HWND hctl() const        { return reinterpret_cast<HWND>(lparam); }
+  void set_hctl(HWND hwnd) { lparam = reinterpret_cast<LPARAM>(hwnd); }
 };
 
 using ctlcolordlg_params       = ctlcolorbtn_params;
@@ -625,7 +627,7 @@ struct vkeytoitem_params : public message_params {
 };
 
 struct windowposchanged_params : public message_params {
-  WINDOWPOS& windowpos() const { return *reinterpret_cast<WINDOWPOS*>(lparam); }
+  auto windowpos() const { return reinterpret_cast<WINDOWPOS*>(lparam); }
 };
 
 using windowposchanging_params = windowposchanged_params;

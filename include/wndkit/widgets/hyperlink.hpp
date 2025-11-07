@@ -14,15 +14,19 @@ class hyperlink {
 public:
   hyperlink() = default;
 
-  void create(HWND parent, int x, int y, int width, int height, ATOM atom) {
+  static constexpr const wchar_t* class_name() {
+    return L"wndkit_hyperlink";
+  }
+
+  HWND create(HWND parent, int x, int y, int width, int height, HINSTANCE instance) {
     hwnd_ = wndkit::dispatcher::create_window(&message_handler_,
       0,
-      reinterpret_cast<LPCWSTR>(static_cast<WORD>(atom)),
+      class_name(),
       nullptr,
       WS_CHILD | WS_VISIBLE,
       x, y, width, height,
       parent, nullptr,
-      nullptr, nullptr);
+      instance, nullptr);
     if (!hwnd_)
       throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
 
@@ -34,7 +38,10 @@ public:
       .on_message_invoke<WM_LBUTTONUP>([this]()  { on_button_up(); })
       .on_message<WM_SETFONT>([this](HWND, const auto& params) {
         on_set_font(params);
-      });
+      })
+    ;
+
+    return hwnd_;
   }
 
   void set_text(const auto& text) {
@@ -51,7 +58,8 @@ public:
     url_ = url;
     set_tooltip(url_);
 
-    InvalidateRect(hwnd_, nullptr, TRUE);
+    if (text_.empty() || text_ == url)
+      set_text(url_);
   }
 
   auto url() const {
@@ -59,13 +67,12 @@ public:
   }
 
   // Static method to register the custom window class
-  [[nodiscard]] static ATOM register_class(HINSTANCE instance) {
+  static ATOM register_class(HINSTANCE instance) {
     WNDCLASSW wc{};
     wc.lpfnWndProc   = wndkit::dispatcher::window_proc;
     wc.hCursor       = LoadCursorW(nullptr, reinterpret_cast<LPCWSTR>(IDC_HAND));
-    wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
     wc.hInstance     = instance;
-    wc.lpszClassName = L"wndkit_hyperlink";
+    wc.lpszClassName = class_name();
 
     auto atom = RegisterClassW(&wc);
     if (!atom)
@@ -103,13 +110,20 @@ private:
 
   void on_paint() {
     PAINTSTRUCT ps{};
-    HDC hdc = BeginPaint(hwnd_, &ps);
+    auto hdc = wil::BeginPaint(hwnd_, &ps);
 
-    RECT rc{};
-    GetClientRect(hwnd_, &rc);
+    // Ask parent for colors
+    wndkit::ctlcolorstatic_params ctlcolorstatic_params;
+    ctlcolorstatic_params.set_hdc(hdc.get());
+    ctlcolorstatic_params.set_hctl(hwnd_);
 
-    auto old_font = wil::SelectObject(hdc, font_);
-    SetBkMode(hdc, TRANSPARENT);
+    auto background = reinterpret_cast<HBRUSH>(SendMessageW(GetParent(hwnd_), WM_CTLCOLORSTATIC, ctlcolorstatic_params.wparam, ctlcolorstatic_params.lparam));
+    if (background)
+      FillRect(hdc.get(), &ps.rcPaint, background);
+    else
+      FillRect(hdc.get(), &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+
+    auto old_font = wil::SelectObject(hdc.get(), font_);
 
     COLORREF color{};
     if (hovered_)
@@ -119,12 +133,10 @@ private:
     else
       color = unvisited_color_;
 
-    SetTextColor(hdc, color);
+    SetTextColor(hdc.get(), color);
     std::wstring& text = text_.empty() ? url_ : text_;
 
-    DrawTextW(hdc, text.c_str(), static_cast<int>(text.length()), &rc, DT_SINGLELINE | DT_VCENTER | DT_LEFT);
-
-    EndPaint(hwnd_, &ps);
+    DrawTextW(hdc.get(), text.c_str(), static_cast<int>(text.length()), &ps.rcPaint, DT_SINGLELINE | DT_VCENTER | DT_LEFT);
   }
 
   void on_mouse_move() {
