@@ -638,4 +638,7 @@ struct dpichanged_params : public message_params {
   [[nodiscard]] RECT* suggested_rect() const noexcept { return reinterpret_cast<RECT*>(lparam); }
 };
 
+using dpichangedbeforeparent_params = message_params;
+using dpichangedafterparent_params = message_params;
+
 }
