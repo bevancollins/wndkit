@@ -34,7 +34,7 @@ struct message_params {
 };
 
 struct pos_params : public message_params {
-  [[nodiscard]] POINT pos() const noexcept {
+  POINT pos() const {
     return {
       static_cast<int>(static_cast<short>(LOWORD(lparam))),
       static_cast<int>(static_cast<short>(HIWORD(lparam)))
@@ -43,90 +43,90 @@ struct pos_params : public message_params {
 };
 
 struct command_params : public message_params {
-  [[nodiscard]] bool is_from_menu() const noexcept        { return HIWORD(wparam) == 0; }
-  [[nodiscard]] bool is_from_accelerator() const noexcept { return HIWORD(wparam) == 1; }
-  [[nodiscard]] bool is_from_control() const noexcept     { return !is_from_menu() && !is_from_accelerator(); }
-  [[nodiscard]] WORD id() const noexcept                  { return LOWORD(wparam); }
-  [[nodiscard]] WORD control_notif_code() const noexcept  { return HIWORD(wparam); }
-  [[nodiscard]] HWND control_hwnd() const noexcept        { return reinterpret_cast<HWND>(lparam); }
+  bool is_from_menu() const        { return HIWORD(wparam) == 0; }
+  bool is_from_accelerator() const { return HIWORD(wparam) == 1; }
+  bool is_from_control() const     { return !is_from_menu() && !is_from_accelerator(); }
+  WORD id() const                  { return LOWORD(wparam); }
+  WORD control_notif_code() const  { return HIWORD(wparam); }
+  HWND control_hwnd() const        { return reinterpret_cast<HWND>(lparam); }
 };
 
 struct notify_params : public message_params {
-  [[nodiscard]] NMHDR& nmhdr() const noexcept { return *reinterpret_cast<NMHDR*>(lparam); }
+  NMHDR& nmhdr() const { return *reinterpret_cast<NMHDR*>(lparam); }
 };
 
 struct activate_params : public message_params {
-  [[nodiscard]] bool is_being_activated() const noexcept           { return wparam != WA_INACTIVE; }
-  [[nodiscard]] bool activated_not_by_mouse_click() const noexcept { return wparam == WA_ACTIVE; }
-  [[nodiscard]] bool activated_by_mouse_click() const noexcept     { return wparam == WA_CLICKACTIVE; }
-  [[nodiscard]] HWND swapped_window() const noexcept               { return reinterpret_cast<HWND>(lparam); }
+  bool is_being_activated() const           { return wparam != WA_INACTIVE; }
+  bool activated_not_by_mouse_click() const { return wparam == WA_ACTIVE; }
+  bool activated_by_mouse_click() const     { return wparam == WA_CLICKACTIVE; }
+  HWND swapped_window() const               { return reinterpret_cast<HWND>(lparam); }
 };
 
 struct activateapp_params : public message_params {
-  [[nodiscard]] bool is_being_activated() const noexcept { return wparam != FALSE; }
-  [[nodiscard]] DWORD thread_id() const noexcept         { return static_cast<DWORD>(lparam); }
+  bool is_being_activated() const { return wparam != FALSE; }
+  DWORD thread_id() const         { return static_cast<DWORD>(lparam); }
 };
 
 struct askcbformatname_params : public message_params {
-  [[nodiscard]] UINT szbuffer() const noexcept   { return static_cast<UINT>(wparam); }
-  [[nodiscard]] wchar_t* buffer() const noexcept { return reinterpret_cast<wchar_t*>(lparam); }
+  UINT szbuffer() const   { return static_cast<UINT>(wparam); }
+  wchar_t* buffer() const { return reinterpret_cast<wchar_t*>(lparam); }
 };
 
 using cancelmode_params = message_params;
 
 struct capturechanged_params : public message_params {
-  [[nodiscard]] HWND window_gaining_mouse() const noexcept { return reinterpret_cast<HWND>(lparam); }
+  HWND window_gaining_mouse() const { return reinterpret_cast<HWND>(lparam); }
 };
 
 struct changecbchain_params : public message_params {
-  [[nodiscard]] HWND window_being_removed() const noexcept { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] HWND next_window() const noexcept          { return reinterpret_cast<HWND>(lparam); }
-  [[nodiscard]] bool is_last_window() const noexcept       { return next_window() == nullptr; }
+  HWND window_being_removed() const { return reinterpret_cast<HWND>(wparam); }
+  HWND next_window() const          { return reinterpret_cast<HWND>(lparam); }
+  bool is_last_window() const       { return next_window() == nullptr; }
 };
 
 struct char_params : public message_params {
-  [[nodiscard]] WORD char_code() const noexcept           { return static_cast<WORD>(wparam); }
-  [[nodiscard]] WORD repeat_count() const noexcept        { return LOWORD(lparam); }
-  [[nodiscard]] BYTE scan_code() const noexcept           { return LOBYTE(HIWORD(lparam)); }
-  [[nodiscard]] bool is_extended_key() const noexcept     { return (lparam >> 24) & 1; }
-  [[nodiscard]] bool has_alt_key() const noexcept         { return (lparam >> 29) & 1; }
-  [[nodiscard]] bool key_previously_down() const noexcept { return (lparam >> 30) & 1; }
-  [[nodiscard]] bool key_being_released() const noexcept  { return (lparam >> 31) & 1; }
+  WORD char_code() const           { return static_cast<WORD>(wparam); }
+  WORD repeat_count() const        { return LOWORD(lparam); }
+  BYTE scan_code() const           { return LOBYTE(HIWORD(lparam)); }
+  bool is_extended_key() const     { return (lparam >> 24) & 1; }
+  bool has_alt_key() const         { return (lparam >> 29) & 1; }
+  bool key_previously_down() const { return (lparam >> 30) & 1; }
+  bool key_being_released() const  { return (lparam >> 31) & 1; }
 };
 
 struct chartoitem_params : public message_params {
-  [[nodiscard]] WORD char_code() const noexcept         { return LOWORD(wparam); }
-  [[nodiscard]] WORD current_caret_pos() const noexcept { return HIWORD(wparam); }
-  [[nodiscard]] HWND hlistbox() const noexcept          { return reinterpret_cast<HWND>(lparam); }
+  WORD char_code() const         { return LOWORD(wparam); }
+  WORD current_caret_pos() const { return HIWORD(wparam); }
+  HWND hlistbox() const          { return reinterpret_cast<HWND>(lparam); }
 };
 
 using childactivate_params = message_params;
 using close_params         = message_params;
 
 struct compacting_params : public message_params {
-  [[nodiscard]] UINT cpu_time_ratio() const noexcept { return static_cast<UINT>(wparam); }
+  UINT cpu_time_ratio() const { return static_cast<UINT>(wparam); }
 };
 
 struct compareitem_params : public message_params {
-  [[nodiscard]] WORD control_id() const noexcept                      { return static_cast<WORD>(wparam); }
-  [[nodiscard]] COMPAREITEMSTRUCT& compareitemstruct() const noexcept { return *reinterpret_cast<COMPAREITEMSTRUCT*>(lparam); }
+  WORD control_id() const                      { return static_cast<WORD>(wparam); }
+  COMPAREITEMSTRUCT& compareitemstruct() const { return *reinterpret_cast<COMPAREITEMSTRUCT*>(lparam); }
 };
 
 struct contextmenu_params : public pos_params {
-  [[nodiscard]] HWND target() const noexcept { return reinterpret_cast<HWND>(wparam); }
+  HWND target() const { return reinterpret_cast<HWND>(wparam); }
 };
 
 struct copydata_params : public message_params {
-  [[nodiscard]] COPYDATASTRUCT& copydatastruct() const noexcept { return *reinterpret_cast<COPYDATASTRUCT*>(lparam); }
+  COPYDATASTRUCT& copydatastruct() const { return *reinterpret_cast<COPYDATASTRUCT*>(lparam); }
 };
 
 struct create_params : public message_params {
-  [[nodiscard]] auto createstruct() const noexcept { return reinterpret_cast<CREATESTRUCTW*>(lparam); }
+  auto createstruct() const { return reinterpret_cast<CREATESTRUCTW*>(lparam); }
 };
 
 struct ctlcolorbtn_params : public message_params {
-  [[nodiscard]] HDC hdc() const noexcept   { return reinterpret_cast<HDC>(wparam); }
-  [[nodiscard]] HWND hctl() const noexcept { return reinterpret_cast<HWND>(lparam); }
+  HDC hdc() const   { return reinterpret_cast<HDC>(wparam); }
+  HWND hctl() const { return reinterpret_cast<HWND>(lparam); }
 };
 
 using ctlcolordlg_params       = ctlcolorbtn_params;
@@ -136,187 +136,187 @@ using ctlcolorscrollbar_params = ctlcolorbtn_params;
 using ctlcolorstatic_params    = ctlcolorbtn_params;
 
 struct deadchar_params : public message_params {
-  [[nodiscard]] WORD char_code() const noexcept           { return static_cast<WORD>(wparam); }
-  [[nodiscard]] WORD repeat_count() const noexcept        { return LOWORD(lparam); }
-  [[nodiscard]] BYTE scan_code() const noexcept           { return LOBYTE(HIWORD(lparam)); }
-  [[nodiscard]] bool is_extended_key() const noexcept     { return (lparam >> 24) & 1; }
-  [[nodiscard]] bool has_alt_key() const noexcept         { return (lparam >> 29) & 1; }
-  [[nodiscard]] bool key_previously_down() const noexcept { return (lparam >> 30) & 1; }
-  [[nodiscard]] bool key_being_released() const noexcept  { return (lparam >> 31) & 1; }
+  WORD char_code() const           { return static_cast<WORD>(wparam); }
+  WORD repeat_count() const        { return LOWORD(lparam); }
+  BYTE scan_code() const           { return LOBYTE(HIWORD(lparam)); }
+  bool is_extended_key() const     { return (lparam >> 24) & 1; }
+  bool has_alt_key() const         { return (lparam >> 29) & 1; }
+  bool key_previously_down() const { return (lparam >> 30) & 1; }
+  bool key_being_released() const  { return (lparam >> 31) & 1; }
 };
 
 struct deleteitem_params : public message_params {
-  [[nodiscard]] WORD control_id() const noexcept                    { return static_cast<WORD>(wparam); }
-  [[nodiscard]] DELETEITEMSTRUCT& deleteitemstruct() const noexcept { return *reinterpret_cast<DELETEITEMSTRUCT*>(lparam); }
+  WORD control_id() const                    { return static_cast<WORD>(wparam); }
+  DELETEITEMSTRUCT& deleteitemstruct() const { return *reinterpret_cast<DELETEITEMSTRUCT*>(lparam); }
 };
 
 using destroy_params          = message_params;
 using destroyclipboard_params = message_params;
 
 struct devmodechange_params : public message_params {
-  [[nodiscard]] const wchar_t* device_name() const noexcept { return reinterpret_cast<const wchar_t*>(lparam); }
+  const wchar_t* device_name() const { return reinterpret_cast<const wchar_t*>(lparam); }
 };
 
 struct displaychange_params : public message_params {
-  [[nodiscard]] UINT bits_per_pixel() const noexcept { return static_cast<UINT>(wparam); }
-  [[nodiscard]] SIZE sz() const noexcept             { return {LOWORD(lparam), HIWORD(lparam)}; }
+  UINT bits_per_pixel() const { return static_cast<UINT>(wparam); }
+  SIZE sz() const             { return {LOWORD(lparam), HIWORD(lparam)}; }
 };
 
 using drawclipboard_params = message_params;
 
 struct drawitem_params : public message_params {
-  [[nodiscard]] WORD control_id() const noexcept                { return static_cast<WORD>(wparam); }
-  [[nodiscard]] bool is_from_menu() const noexcept              { return control_id() == 0; }
-  [[nodiscard]] DRAWITEMSTRUCT& drawitemstruct() const noexcept { return *reinterpret_cast<DRAWITEMSTRUCT*>(lparam); }
+  WORD control_id() const                { return static_cast<WORD>(wparam); }
+  bool is_from_menu() const              { return control_id() == 0; }
+  DRAWITEMSTRUCT& drawitemstruct() const { return *reinterpret_cast<DRAWITEMSTRUCT*>(lparam); }
 };
 
 struct dropfiles_params : public message_params {
-  [[nodiscard]] HDROP hdrop() const noexcept { return reinterpret_cast<HDROP>(wparam); }
+  HDROP hdrop() const { return reinterpret_cast<HDROP>(wparam); }
 };
 
 struct enable_params : public message_params {
-  [[nodiscard]] bool has_been_enabled() const noexcept { return wparam != FALSE; }
+  bool has_been_enabled() const { return wparam != FALSE; }
 };
 
 struct endsession_params : public message_params {
-  [[nodiscard]] bool is_session_being_ended() const noexcept { return wparam != FALSE; }
-  [[nodiscard]] bool is_system_issue() const noexcept        { return (lparam & ENDSESSION_CLOSEAPP) != 0; }
-  [[nodiscard]] bool is_forced_critical() const noexcept     { return (lparam & ENDSESSION_CRITICAL) != 0; }
-  [[nodiscard]] bool is_logoff() const noexcept              { return (lparam & ENDSESSION_LOGOFF) != 0; }
-  [[nodiscard]] bool is_shutdown() const noexcept            { return lparam == 0; }
+  bool is_session_being_ended() const { return wparam != FALSE; }
+  bool is_system_issue() const        { return (lparam & ENDSESSION_CLOSEAPP) != 0; }
+  bool is_forced_critical() const     { return (lparam & ENDSESSION_CRITICAL) != 0; }
+  bool is_logoff() const              { return (lparam & ENDSESSION_LOGOFF) != 0; }
+  bool is_shutdown() const            { return lparam == 0; }
 };
 
 struct enteridle_params : public message_params {
-  [[nodiscard]] bool is_menu_displayed() const noexcept { return wparam == MSGF_MENU; }
-  [[nodiscard]] HWND hwindow() const noexcept           { return reinterpret_cast<HWND>(lparam); }
+  bool is_menu_displayed() const { return wparam == MSGF_MENU; }
+  HWND hwindow() const           { return reinterpret_cast<HWND>(lparam); }
 };
 
 struct entermenuloop_params : public message_params {
-  [[nodiscard]] bool uses_trackpopupmenu() const noexcept { return wparam != FALSE; }
+  bool uses_trackpopupmenu() const { return wparam != FALSE; }
 };
 
 using entersizemove_params = message_params;
 
 struct erasebkgnd_params : public message_params {
-  [[nodiscard]] HDC hdc() const noexcept { return reinterpret_cast<HDC>(wparam); }
+  HDC hdc() const { return reinterpret_cast<HDC>(wparam); }
 };
 
 struct exitmenuloop_params : public message_params {
-  [[nodiscard]] bool is_shortcut_menu() const noexcept { return wparam != FALSE; }
+  bool is_shortcut_menu() const { return wparam != FALSE; }
 };
 
 using exitsizemove_params = message_params;
 using fontchange_params   = message_params;
 
 struct getdlgcode_params : public message_params {
-  [[nodiscard]] BYTE vkey_code() const noexcept { return static_cast<BYTE>(wparam); }
-  [[nodiscard]] bool is_query() const noexcept  { return lparam == 0; }
-  [[nodiscard]] MSG* msg() const noexcept       { return is_query() ? nullptr : reinterpret_cast<MSG*>(lparam); }
+  BYTE vkey_code() const { return static_cast<BYTE>(wparam); }
+  bool is_query() const  { return lparam == 0; }
+  MSG* msg() const       { return is_query() ? nullptr : reinterpret_cast<MSG*>(lparam); }
 };
 
 using getfont_params   = message_params;
 using gethotkey_params = message_params;
 
 struct geticon_params : public message_params {
-  [[nodiscard]] bool is_big() const noexcept       { return wparam == ICON_BIG; }
-  [[nodiscard]] bool is_small() const noexcept     { return wparam == ICON_SMALL; }
-  [[nodiscard]] bool is_small_app() const noexcept { return wparam == ICON_SMALL2; }
-  [[nodiscard]] UINT dpi() const noexcept          { return static_cast<UINT>(lparam); }
+  bool is_big() const       { return wparam == ICON_BIG; }
+  bool is_small() const     { return wparam == ICON_SMALL; }
+  bool is_small_app() const { return wparam == ICON_SMALL2; }
+  UINT dpi() const          { return static_cast<UINT>(lparam); }
 };
 
 struct getminmaxinfo_params : public message_params {
-  [[nodiscard]] MINMAXINFO& minmaxinfo() const noexcept { return *reinterpret_cast<MINMAXINFO*>(lparam); }
+  MINMAXINFO& minmaxinfo() const { return *reinterpret_cast<MINMAXINFO*>(lparam); }
 };
 
 struct gettext_params : public message_params {
-  [[nodiscard]] UINT buffer_size() const noexcept { return static_cast<UINT>(wparam); }
-  [[nodiscard]] wchar_t* buffer() const noexcept  { return reinterpret_cast<wchar_t*>(lparam); }
+  UINT buffer_size() const { return static_cast<UINT>(wparam); }
+  wchar_t* buffer() const  { return reinterpret_cast<wchar_t*>(lparam); }
 };
 
 using gettextlength_params = message_params;
 
 struct help_params : public message_params {
-  [[nodiscard]] HELPINFO& helpinfo() const noexcept { return *reinterpret_cast<HELPINFO*>(lparam); }
+  HELPINFO& helpinfo() const { return *reinterpret_cast<HELPINFO*>(lparam); }
 };
 
 struct hotkey_params : public message_params {
-  [[nodiscard]] bool is_snap_desktop() const noexcept { return wparam == IDHOT_SNAPDESKTOP; }
-  [[nodiscard]] bool is_snap_window() const noexcept  { return wparam == IDHOT_SNAPWINDOW; }
-  [[nodiscard]] bool has_alt() const noexcept         { return (LOWORD(lparam) & MOD_ALT) != 0; }
-  [[nodiscard]] bool has_ctrl() const noexcept        { return (LOWORD(lparam) & MOD_CONTROL) != 0; }
-  [[nodiscard]] bool has_shift() const noexcept       { return (LOWORD(lparam) & MOD_SHIFT) != 0; }
-  [[nodiscard]] bool has_win() const noexcept         { return (LOWORD(lparam) & MOD_WIN) != 0; }
-  [[nodiscard]] BYTE vkey_code() const noexcept       { return static_cast<BYTE>(HIWORD(lparam)); }
+  bool is_snap_desktop() const { return wparam == IDHOT_SNAPDESKTOP; }
+  bool is_snap_window() const  { return wparam == IDHOT_SNAPWINDOW; }
+  bool has_alt() const         { return (LOWORD(lparam) & MOD_ALT) != 0; }
+  bool has_ctrl() const        { return (LOWORD(lparam) & MOD_CONTROL) != 0; }
+  bool has_shift() const       { return (LOWORD(lparam) & MOD_SHIFT) != 0; }
+  bool has_win() const         { return (LOWORD(lparam) & MOD_WIN) != 0; }
+  BYTE vkey_code() const       { return static_cast<BYTE>(HIWORD(lparam)); }
 };
 
 struct hscroll_params : public message_params {
-  [[nodiscard]] WORD scroll_request() const noexcept { return LOWORD(wparam); }
-  [[nodiscard]] WORD scroll_pos() const noexcept     { return HIWORD(wparam); }
-  [[nodiscard]] HWND scrollbar() const noexcept      { return reinterpret_cast<HWND>(lparam); }
+  WORD scroll_request() const { return LOWORD(wparam); }
+  WORD scroll_pos() const     { return HIWORD(wparam); }
+  HWND scrollbar() const      { return reinterpret_cast<HWND>(lparam); }
 };
 
 using vscroll_params = hscroll_params;
 
 struct hscrollclipboard_params : public message_params {
-  [[nodiscard]] HWND clipboard_viewer() const noexcept { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] WORD scroll_event() const noexcept     { return LOWORD(lparam); }
-  [[nodiscard]] WORD scroll_pos() const noexcept       { return HIWORD(lparam); }
+  HWND clipboard_viewer() const { return reinterpret_cast<HWND>(wparam); }
+  WORD scroll_event() const     { return LOWORD(lparam); }
+  WORD scroll_pos() const       { return HIWORD(lparam); }
 };
 
 using vscrollclipboard_params = hscrollclipboard_params;
 
 struct iconerasebkgnd_params : public message_params {
-  [[nodiscard]] HDC hdc() const noexcept { return reinterpret_cast<HDC>(wparam); }
+  HDC hdc() const { return reinterpret_cast<HDC>(wparam); }
 };
 
 struct initdialog_params : public message_params {
-  [[nodiscard]] HWND focused_ctrl() const noexcept { return reinterpret_cast<HWND>(wparam); }
+  HWND focused_ctrl() const { return reinterpret_cast<HWND>(wparam); }
 };
 
 struct initmenu_params : public message_params {
-  [[nodiscard]] HMENU hmenu() const noexcept { return reinterpret_cast<HMENU>(wparam); }
+  HMENU hmenu() const { return reinterpret_cast<HMENU>(wparam); }
 };
 
 struct initmenupopup_params : public message_params {
-  [[nodiscard]] HMENU hmenu() const noexcept             { return reinterpret_cast<HMENU>(wparam); }
-  [[nodiscard]] short relative_pos() const noexcept      { return LOWORD(lparam); }
-  [[nodiscard]] bool is_window_menu() const noexcept     { return HIWORD(lparam) != FALSE; }
+  HMENU hmenu() const             { return reinterpret_cast<HMENU>(wparam); }
+  short relative_pos() const      { return LOWORD(lparam); }
+  bool is_window_menu() const     { return HIWORD(lparam) != FALSE; }
 };
 
 struct inputlangchange_params : public message_params {
-  [[nodiscard]] DWORD new_charset() const noexcept   { return static_cast<DWORD>(wparam); }
-  [[nodiscard]] HKL keyboard_layout() const noexcept { return reinterpret_cast<HKL>(lparam); }
+  DWORD new_charset() const   { return static_cast<DWORD>(wparam); }
+  HKL keyboard_layout() const { return reinterpret_cast<HKL>(lparam); }
 };
 
 struct inputlangchangerequest_params : public message_params {
-  [[nodiscard]] bool previous_chosen() const noexcept      { return (wparam & INPUTLANGCHANGE_BACKWARD) != 0; }
-  [[nodiscard]] bool next_chosen() const noexcept          { return (wparam & INPUTLANGCHANGE_FORWARD) != 0; }
-  [[nodiscard]] bool can_be_used_with_sys() const noexcept { return (wparam & INPUTLANGCHANGE_SYSCHARSET) != 0; }
-  [[nodiscard]] HKL keyboard_layout() const noexcept       { return reinterpret_cast<HKL>(lparam); }
+  bool previous_chosen() const      { return (wparam & INPUTLANGCHANGE_BACKWARD) != 0; }
+  bool next_chosen() const          { return (wparam & INPUTLANGCHANGE_FORWARD) != 0; }
+  bool can_be_used_with_sys() const { return (wparam & INPUTLANGCHANGE_SYSCHARSET) != 0; }
+  HKL keyboard_layout() const       { return reinterpret_cast<HKL>(lparam); }
 };
 
 struct keydown_params : public message_params {
-  [[nodiscard]] BYTE vkey_code() const noexcept           { return static_cast<BYTE>(wparam); }
-  [[nodiscard]] WORD repeat_count() const noexcept        { return LOWORD(lparam); }
-  [[nodiscard]] BYTE scan_code() const noexcept           { return LOBYTE(HIWORD(lparam)); }
-  [[nodiscard]] bool is_extended_key() const noexcept     { return (lparam >> 24) & 1; }
-  [[nodiscard]] bool key_previously_down() const noexcept { return (lparam >> 30) & 1; }
+  BYTE vkey_code() const           { return static_cast<BYTE>(wparam); }
+  WORD repeat_count() const        { return LOWORD(lparam); }
+  BYTE scan_code() const           { return LOBYTE(HIWORD(lparam)); }
+  bool is_extended_key() const     { return (lparam >> 24) & 1; }
+  bool key_previously_down() const { return (lparam >> 30) & 1; }
 };
 
 using keyup_params = keydown_params;
 
 struct killfocus_params : public message_params {
-  [[nodiscard]] HWND focused_window() const noexcept { return reinterpret_cast<HWND>(wparam); }
+  HWND focused_window() const { return reinterpret_cast<HWND>(wparam); }
 };
 
 struct lbuttondblclk_params : public pos_params {
-  [[nodiscard]] bool has_ctrl() const noexcept       { return (wparam & MK_CONTROL) != 0; }
-  [[nodiscard]] bool has_left_btn() const noexcept   { return (wparam & MK_LBUTTON) != 0; }
-  [[nodiscard]] bool has_middle_btn() const noexcept { return (wparam & MK_MBUTTON) != 0; }
-  [[nodiscard]] bool has_right_btn() const noexcept  { return (wparam & MK_RBUTTON) != 0; }
-  [[nodiscard]] bool has_shift() const noexcept      { return (wparam & MK_SHIFT) != 0; }
-  [[nodiscard]] bool has_xbtn1() const noexcept      { return (wparam & MK_XBUTTON1) != 0; }
-  [[nodiscard]] bool has_xbtn2() const noexcept      { return (wparam & MK_XBUTTON2) != 0; }
+  bool has_ctrl() const       { return (wparam & MK_CONTROL) != 0; }
+  bool has_left_btn() const   { return (wparam & MK_LBUTTON) != 0; }
+  bool has_middle_btn() const { return (wparam & MK_MBUTTON) != 0; }
+  bool has_right_btn() const  { return (wparam & MK_RBUTTON) != 0; }
+  bool has_shift() const      { return (wparam & MK_SHIFT) != 0; }
+  bool has_xbtn1() const      { return (wparam & MK_XBUTTON1) != 0; }
+  bool has_xbtn2() const      { return (wparam & MK_XBUTTON2) != 0; }
 };
 
 using lbuttondown_params   = lbuttondblclk_params;
@@ -331,93 +331,93 @@ using rbuttondown_params   = lbuttondblclk_params;
 using rbuttonup_params     = lbuttondblclk_params;
 
 struct mdiactivate_params : public message_params {
-  [[nodiscard]] HWND activated_child() const noexcept   { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] HWND deactivated_child() const noexcept { return reinterpret_cast<HWND>(lparam); }
+  HWND activated_child() const   { return reinterpret_cast<HWND>(wparam); }
+  HWND deactivated_child() const { return reinterpret_cast<HWND>(lparam); }
 };
 
 struct measureitem_params : public message_params {
-  [[nodiscard]] MEASUREITEMSTRUCT& measureitemstruct() const noexcept { return *reinterpret_cast<MEASUREITEMSTRUCT*>(lparam); }
+  MEASUREITEMSTRUCT& measureitemstruct() const { return *reinterpret_cast<MEASUREITEMSTRUCT*>(lparam); }
 };
 
 struct menuchar_params : public message_params {
-  [[nodiscard]] WORD char_code() const noexcept      { return LOWORD(wparam); }
-  [[nodiscard]] bool is_window_menu() const noexcept { return HIWORD(wparam) == MF_SYSMENU; }
-  [[nodiscard]] HMENU hmenu() const noexcept         { return reinterpret_cast<HMENU>(lparam); }
+  WORD char_code() const      { return LOWORD(wparam); }
+  bool is_window_menu() const { return HIWORD(wparam) == MF_SYSMENU; }
+  HMENU hmenu() const         { return reinterpret_cast<HMENU>(lparam); }
 };
 
 struct menudrag_params : public message_params {
-  [[nodiscard]] UINT initial_pos() const noexcept { return static_cast<UINT>(wparam); }
-  [[nodiscard]] HMENU hmenu() const noexcept      { return reinterpret_cast<HMENU>(lparam); }
+  UINT initial_pos() const { return static_cast<UINT>(wparam); }
+  HMENU hmenu() const      { return reinterpret_cast<HMENU>(lparam); }
 };
 
 struct menugetobject_params : public message_params {
-  [[nodiscard]] MENUGETOBJECTINFO& menugetobjectinfo() const noexcept { return *reinterpret_cast<MENUGETOBJECTINFO*>(lparam); }
+  MENUGETOBJECTINFO& menugetobjectinfo() const { return *reinterpret_cast<MENUGETOBJECTINFO*>(lparam); }
 };
 
 struct menurbuttonup_params : public message_params {
-  [[nodiscard]] UINT index() const noexcept  { return static_cast<UINT>(wparam); }
-  [[nodiscard]] HMENU hmenu() const noexcept { return reinterpret_cast<HMENU>(lparam); }
+  UINT index() const  { return static_cast<UINT>(wparam); }
+  HMENU hmenu() const { return reinterpret_cast<HMENU>(lparam); }
 };
 
 struct menuselect_params : public message_params {
-  [[nodiscard]] WORD item() const noexcept              { return LOWORD(wparam); }
-  [[nodiscard]] bool has_bitmap() const noexcept        { return (HIWORD(wparam) & MF_BITMAP) != 0; }
-  [[nodiscard]] bool is_checked() const noexcept        { return (HIWORD(wparam) & MF_CHECKED) != 0; }
-  [[nodiscard]] bool is_disabled() const noexcept       { return (HIWORD(wparam) & MF_DISABLED) != 0; }
-  [[nodiscard]] bool is_grayed() const noexcept         { return (HIWORD(wparam) & MF_GRAYED) != 0; }
-  [[nodiscard]] bool is_highlighted() const noexcept    { return (HIWORD(wparam) & MF_HILITE) != 0; }
-  [[nodiscard]] bool mouse_selected() const noexcept    { return (HIWORD(wparam) & MF_MOUSESELECT) != 0; }
-  [[nodiscard]] bool is_owner_draw() const noexcept     { return (HIWORD(wparam) & MF_OWNERDRAW) != 0; }
-  [[nodiscard]] bool opens_popup() const noexcept       { return (HIWORD(wparam) & MF_POPUP) != 0; }
-  [[nodiscard]] bool is_sysmenu() const noexcept        { return (HIWORD(wparam) & MF_SYSMENU) != 0; }
-  [[nodiscard]] bool system_has_closed() const noexcept { return HIWORD(wparam) == 0xFFFF && !lparam; }
-  [[nodiscard]] HMENU hmenu() const noexcept            { return (opens_popup() || is_sysmenu()) ? reinterpret_cast<HMENU>(lparam) : nullptr; }
+  WORD item() const              { return LOWORD(wparam); }
+  bool has_bitmap() const        { return (HIWORD(wparam) & MF_BITMAP) != 0; }
+  bool is_checked() const        { return (HIWORD(wparam) & MF_CHECKED) != 0; }
+  bool is_disabled() const       { return (HIWORD(wparam) & MF_DISABLED) != 0; }
+  bool is_grayed() const         { return (HIWORD(wparam) & MF_GRAYED) != 0; }
+  bool is_highlighted() const    { return (HIWORD(wparam) & MF_HILITE) != 0; }
+  bool mouse_selected() const    { return (HIWORD(wparam) & MF_MOUSESELECT) != 0; }
+  bool is_owner_draw() const     { return (HIWORD(wparam) & MF_OWNERDRAW) != 0; }
+  bool opens_popup() const       { return (HIWORD(wparam) & MF_POPUP) != 0; }
+  bool is_sysmenu() const        { return (HIWORD(wparam) & MF_SYSMENU) != 0; }
+  bool system_has_closed() const { return HIWORD(wparam) == 0xFFFF && !lparam; }
+  HMENU hmenu() const            { return (opens_popup() || is_sysmenu()) ? reinterpret_cast<HMENU>(lparam) : nullptr; }
 };
 
 struct mouseactivate_params : public message_params {
-  [[nodiscard]] short hit_test_code() const noexcept { return static_cast<short>(LOWORD(lparam)); }
-  [[nodiscard]] WORD  mouse_msg_id() const noexcept  { return HIWORD(lparam); }
+  short hit_test_code() const { return static_cast<short>(LOWORD(lparam)); }
+  WORD  mouse_msg_id() const  { return HIWORD(lparam); }
 };
 
 using mouseleave_params = message_params;
 
 struct mousewheel_params : public pos_params {
-  [[nodiscard]] short wheel_delta() const noexcept   { return GET_WHEEL_DELTA_WPARAM(wparam); }
-  [[nodiscard]] bool has_ctrl() const noexcept       { return (LOWORD(wparam) & MK_CONTROL) != 0; }
-  [[nodiscard]] bool has_left_btn() const noexcept   { return (LOWORD(wparam) & MK_LBUTTON) != 0; }
-  [[nodiscard]] bool has_middle_btn() const noexcept { return (LOWORD(wparam) & MK_MBUTTON) != 0; }
-  [[nodiscard]] bool has_right_btn() const noexcept  { return (LOWORD(wparam) & MK_RBUTTON) != 0; }
-  [[nodiscard]] bool has_shift() const noexcept      { return (LOWORD(wparam) & MK_SHIFT) != 0; }
-  [[nodiscard]] bool has_xbtn1() const noexcept      { return (LOWORD(wparam) & MK_XBUTTON1) != 0; }
-  [[nodiscard]] bool has_xbtn2() const noexcept      { return (LOWORD(wparam) & MK_XBUTTON2) != 0; }
+  short wheel_delta() const   { return GET_WHEEL_DELTA_WPARAM(wparam); }
+  bool has_ctrl() const       { return (LOWORD(wparam) & MK_CONTROL) != 0; }
+  bool has_left_btn() const   { return (LOWORD(wparam) & MK_LBUTTON) != 0; }
+  bool has_middle_btn() const { return (LOWORD(wparam) & MK_MBUTTON) != 0; }
+  bool has_right_btn() const  { return (LOWORD(wparam) & MK_RBUTTON) != 0; }
+  bool has_shift() const      { return (LOWORD(wparam) & MK_SHIFT) != 0; }
+  bool has_xbtn1() const      { return (LOWORD(wparam) & MK_XBUTTON1) != 0; }
+  bool has_xbtn2() const      { return (LOWORD(wparam) & MK_XBUTTON2) != 0; }
 };
 
 using move_params = pos_params;
 
 struct moving_params : public message_params {
-  [[nodiscard]] RECT& screen_coords() const noexcept { return *reinterpret_cast<RECT*>(lparam); }
+  RECT& screen_coords() const { return *reinterpret_cast<RECT*>(lparam); }
 };
 
 struct ncactivate_params : public message_params {
-  [[nodiscard]] bool is_active() const noexcept { return wparam == TRUE; }
+  bool is_active() const { return wparam == TRUE; }
 };
 
 struct nccalcsize_params : public message_params {
-  [[nodiscard]] bool is_nccalcsize() const noexcept        { return wparam == TRUE; }
-  [[nodiscard]] bool is_rect() const noexcept              { return wparam == FALSE; }
-  [[nodiscard]] NCCALCSIZE_PARAMS& params() const noexcept { return *reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam); }
-  [[nodiscard]] RECT& rect() const noexcept                { return *reinterpret_cast<RECT*>(lparam); }
+  bool is_nccalcsize() const        { return wparam == TRUE; }
+  bool is_rect() const              { return wparam == FALSE; }
+  NCCALCSIZE_PARAMS& params() const { return *reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam); }
+  RECT& rect() const                { return *reinterpret_cast<RECT*>(lparam); }
 };
 
 struct nccreate_params : public message_params {
-  [[nodiscard]] auto createstruct() const noexcept { return reinterpret_cast<CREATESTRUCTW*>(lparam); }
+  auto createstruct() const { return reinterpret_cast<CREATESTRUCTW*>(lparam); }
 };
 
 using ncdestroy_params = message_params;
 using nchittest_params = pos_params;
 
 struct nclbuttondblclk_params : public pos_params {
-  [[nodiscard]] short hit_test_code() const noexcept { return static_cast<short>(wparam); }
+  short hit_test_code() const { return static_cast<short>(wparam); }
 };
 
 using nclbuttondown_params   = nclbuttondblclk_params;
@@ -431,68 +431,70 @@ using ncrbuttondown_params   = nclbuttondblclk_params;
 using ncrbuttonup_params     = nclbuttondblclk_params;
 
 struct ncpaint_params : public message_params {
-  [[nodiscard]] HRGN hrgn() const noexcept { return reinterpret_cast<HRGN>(wparam); }
+  HRGN hrgn() const { return reinterpret_cast<HRGN>(wparam); }
 };
 
 struct nextdlgctl_params : public message_params {
-  [[nodiscard]] bool has_ctrl_receiving_focus() const noexcept { return LOWORD(lparam) != FALSE; }
-  [[nodiscard]] HWND ctrl_receiving_focus() const noexcept     { return LOWORD(lparam) ? reinterpret_cast<HWND>(wparam) : nullptr; }
-  [[nodiscard]] bool focus_next() const noexcept               { return wparam == 0; }
+  bool has_ctrl_receiving_focus() const { return LOWORD(lparam) != FALSE; }
+  HWND ctrl_receiving_focus() const     { return LOWORD(lparam) ? reinterpret_cast<HWND>(wparam) : nullptr; }
+  bool focus_next() const               { return wparam == 0; }
 };
 
 struct nextmenu_params : public message_params {
-  [[nodiscard]] BYTE vkey_code() const noexcept           { return static_cast<BYTE>(wparam); }
-  [[nodiscard]] MDINEXTMENU& mdinextmenu() const noexcept { return *reinterpret_cast<MDINEXTMENU*>(lparam); }
+  BYTE vkey_code() const           { return static_cast<BYTE>(wparam); }
+  MDINEXTMENU& mdinextmenu() const { return *reinterpret_cast<MDINEXTMENU*>(lparam); }
 };
 
 struct notifyformat_params : public message_params {
-  [[nodiscard]] HWND window_from() const noexcept           { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] bool is_query_from_control() const noexcept { return lparam == NF_QUERY; }
-  [[nodiscard]] bool is_requery_to_control() const noexcept { return lparam == NF_REQUERY; }
+  HWND window_from() const           { return reinterpret_cast<HWND>(wparam); }
+  bool is_query_from_control() const { return lparam == NF_QUERY; }
+  bool is_requery_to_control() const { return lparam == NF_REQUERY; }
 };
 
 using paint_params = message_params;
 
 struct paintclipboard_params : public message_params {
-  [[nodiscard]] HWND clipboard_viewer() const noexcept          { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] const PAINTSTRUCT& paintstruct() const noexcept { return *reinterpret_cast<const PAINTSTRUCT*>(lparam); }
+  HWND clipboard_viewer() const          { return reinterpret_cast<HWND>(wparam); }
+  const PAINTSTRUCT& paintstruct() const { return *reinterpret_cast<const PAINTSTRUCT*>(lparam); }
 };
 
 struct palettechanged_params : public message_params {
-  [[nodiscard]] HWND window_origin() const noexcept { return reinterpret_cast<HWND>(wparam); }
+  HWND window_origin() const { return reinterpret_cast<HWND>(wparam); }
 };
 
 using paletteischanging_params = palettechanged_params;
 
 struct parentnotify_params : public pos_params {
-  [[nodiscard]] UINT event_message() const noexcept { return static_cast<UINT>(LOWORD(wparam)); }
-  [[nodiscard]] WORD child_id() const noexcept      { return HIWORD(wparam); }
-  [[nodiscard]] HWND child_hwnd() const noexcept    { return reinterpret_cast<HWND>(lparam); }
-  [[nodiscard]] bool is_xbutton1() const noexcept   { return HIWORD(wparam) == XBUTTON1; }
-  [[nodiscard]] WORD pointer_flag() const noexcept  { return HIWORD(wparam); }
+  UINT event_message() const { return static_cast<UINT>(LOWORD(wparam)); }
+  WORD child_id() const      { return HIWORD(wparam); }
+  HWND child_hwnd() const    { return reinterpret_cast<HWND>(lparam); }
+  bool is_xbutton1() const   { return HIWORD(wparam) == XBUTTON1; }
+  WORD pointer_flag() const  { return HIWORD(wparam); }
 };
 
 struct powerbroadcast_params : public message_params {
-  [[nodiscard]] bool is_power_status_change() const noexcept           { return wparam == PBT_APMPOWERSTATUSCHANGE; }
-  [[nodiscard]] bool is_resuming() const noexcept                      { return wparam == PBT_APMRESUMEAUTOMATIC; }
-  [[nodiscard]] bool is_suspending() const noexcept                    { return wparam == PBT_APMSUSPEND; }
-  [[nodiscard]] bool is_power_setting_change() const noexcept          { return wparam == PBT_POWERSETTINGCHANGE; }
-  [[nodiscard]] POWERBROADCAST_SETTING& power_setting() const noexcept { return *reinterpret_cast<POWERBROADCAST_SETTING*>(lparam); }
+  bool is_power_status_change() const           { return wparam == PBT_APMPOWERSTATUSCHANGE; }
+  bool is_resuming() const                      { return wparam == PBT_APMRESUMEAUTOMATIC; }
+  bool is_suspending() const                    { return wparam == PBT_APMSUSPEND; }
+  bool is_power_setting_change() const          { return wparam == PBT_POWERSETTINGCHANGE; }
+  POWERBROADCAST_SETTING& power_setting() const { return *reinterpret_cast<POWERBROADCAST_SETTING*>(lparam); }
 };
 
 struct print_params : public message_params {
-  [[nodiscard]] HDC hdc() const noexcept    { return reinterpret_cast<HDC>(wparam); }
-  [[nodiscard]] UINT flags() const noexcept { return static_cast<UINT>(lparam); }
+  HDC hdc() const    { return reinterpret_cast<HDC>(wparam); }
+  void set_hdc(HDC hdc)            { wparam = reinterpret_cast<WPARAM>(hdc); }
+  UINT flags() const { return static_cast<UINT>(lparam); }
+  void set_flags(UINT flags)       { lparam = static_cast<LPARAM>(flags); }
 };
 
 using printclient_params   = print_params;
 using querydragicon_params = message_params;
 
 struct queryendsession_params : public message_params {
-  [[nodiscard]] bool is_system_issue() const noexcept    { return (lparam & ENDSESSION_CLOSEAPP) != 0; }
-  [[nodiscard]] bool is_forced_critical() const noexcept { return (lparam & ENDSESSION_CRITICAL) != 0; }
-  [[nodiscard]] bool is_logoff() const noexcept          { return (lparam & ENDSESSION_LOGOFF) != 0; }
-  [[nodiscard]] bool is_shutdown() const noexcept        { return lparam == 0; }
+  bool is_system_issue() const    { return (lparam & ENDSESSION_CLOSEAPP) != 0; }
+  bool is_forced_critical() const { return (lparam & ENDSESSION_CRITICAL) != 0; }
+  bool is_logoff() const          { return (lparam & ENDSESSION_LOGOFF) != 0; }
+  bool is_shutdown() const        { return lparam == 0; }
 };
 
 using querynewpalette_params  = message_params;
@@ -500,97 +502,97 @@ using queryopen               = message_params;
 using renderallformats_params = message_params;
 
 struct renderformat_params : public message_params {
-  [[nodiscard]] WORD clipboard_format() const noexcept { return static_cast<WORD>(wparam); }
+  WORD clipboard_format() const { return static_cast<WORD>(wparam); }
 };
 
 struct setcursor_params : public message_params {
-  [[nodiscard]] HWND cursor_owner() const noexcept   { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] short hit_test_code() const noexcept { return static_cast<short>(LOWORD(lparam)); }
-  [[nodiscard]] WORD mouse_msg_id() const noexcept   { return HIWORD(lparam); }
+  HWND cursor_owner() const   { return reinterpret_cast<HWND>(wparam); }
+  short hit_test_code() const { return static_cast<short>(LOWORD(lparam)); }
+  WORD mouse_msg_id() const   { return HIWORD(lparam); }
 };
 
 struct setfocus_params : public message_params {
-  [[nodiscard]] HWND unfocused_window() const noexcept { return reinterpret_cast<HWND>(wparam); }
+  HWND unfocused_window() const { return reinterpret_cast<HWND>(wparam); }
 };
 
 struct setfont_params : public message_params {
-  [[nodiscard]] HFONT hfont() const noexcept        { return reinterpret_cast<HFONT>(wparam); }
-  [[nodiscard]] bool should_redraw() const noexcept { return LOWORD(lparam) != FALSE; }
-  void set_should_redraw(bool f) noexcept           { lparam = MAKELONG(HIWORD(lparam), LOWORD(f ? TRUE : FALSE)); }
+  HFONT hfont() const        { return reinterpret_cast<HFONT>(wparam); }
+  bool should_redraw() const { return LOWORD(lparam) != FALSE; }
+  void set_should_redraw(bool f)           { lparam = MAKELONG(HIWORD(lparam), LOWORD(f ? TRUE : FALSE)); }
 };
 
 struct sethotkey_params : public message_params {
-  [[nodiscard]] BYTE vkey_code() const noexcept    { return static_cast<BYTE>(LOWORD(wparam)); }
-  [[nodiscard]] bool has_alt() const noexcept      { return (HIWORD(wparam) & 0x04) != 0; }
-  [[nodiscard]] bool has_ctrl() const noexcept     { return (HIWORD(wparam) & 0x02) != 0; }
-  [[nodiscard]] bool has_extended() const noexcept { return (HIWORD(wparam) & 0x08) != 0; }
-  [[nodiscard]] bool has_shift() const noexcept    { return (HIWORD(wparam) & 0x01) != 0; }
+  BYTE vkey_code() const    { return static_cast<BYTE>(LOWORD(wparam)); }
+  bool has_alt() const      { return (HIWORD(wparam) & 0x04) != 0; }
+  bool has_ctrl() const     { return (HIWORD(wparam) & 0x02) != 0; }
+  bool has_extended() const { return (HIWORD(wparam) & 0x08) != 0; }
+  bool has_shift() const    { return (HIWORD(wparam) & 0x01) != 0; }
 };
 
 struct seticon_params : public message_params {
-  [[nodiscard]] bool is_small() const noexcept   { return wparam == ICON_SMALL; }
-  [[nodiscard]] HICON hicon() const noexcept     { return reinterpret_cast<HICON>(lparam); }
-  [[nodiscard]] bool is_removed() const noexcept { return hicon() == nullptr; }
+  bool is_small() const   { return wparam == ICON_SMALL; }
+  HICON hicon() const     { return reinterpret_cast<HICON>(lparam); }
+  bool is_removed() const { return hicon() == nullptr; }
 };
 
 struct setredraw_params : public message_params {
-  [[nodiscard]] bool can_redraw() const noexcept { return wparam != FALSE; }
+  bool can_redraw() const { return wparam != FALSE; }
 };
 
 struct settext_params : public message_params {
-  [[nodiscard]] const wchar_t* text() const noexcept { return reinterpret_cast<const wchar_t*>(lparam); }
+  const wchar_t* text() const { return reinterpret_cast<const wchar_t*>(lparam); }
 };
 
 struct settingchange_params : public message_params {
-  [[nodiscard]] const wchar_t* string_id() const noexcept { return reinterpret_cast<const wchar_t*>(lparam); }
-  [[nodiscard]] bool is_policy() const noexcept           { return 0 == lstrcmpW(string_id(), L"Policy"); }
-  [[nodiscard]] bool is_locale() const noexcept           { return 0 == lstrcmpW(string_id(), L"intl"); }
-  [[nodiscard]] bool is_environment_vars() const noexcept { return 0 == lstrcmpW(string_id(), L"Environment"); }
+  const wchar_t* string_id() const { return reinterpret_cast<const wchar_t*>(lparam); }
+  bool is_policy() const           { return 0 == lstrcmpW(string_id(), L"Policy"); }
+  bool is_locale() const           { return 0 == lstrcmpW(string_id(), L"intl"); }
+  bool is_environment_vars() const { return 0 == lstrcmpW(string_id(), L"Environment"); }
 };
 
 struct showwindow_params : public message_params {
-  [[nodiscard]] bool is_being_shown() const noexcept           { return wparam != FALSE; }
-  [[nodiscard]] bool is_other_away() const noexcept            { return lparam == SW_OTHERUNZOOM; }
-  [[nodiscard]] bool is_other_over() const noexcept            { return lparam == SW_OTHERZOOM; }
-  [[nodiscard]] bool is_owner_being_minimized() const noexcept { return lparam == SW_PARENTCLOSING; }
-  [[nodiscard]] bool is_owner_being_restored() const noexcept  { return lparam == SW_PARENTOPENING; }
+  bool is_being_shown() const           { return wparam != FALSE; }
+  bool is_other_away() const            { return lparam == SW_OTHERUNZOOM; }
+  bool is_other_over() const            { return lparam == SW_OTHERZOOM; }
+  bool is_owner_being_minimized() const { return lparam == SW_PARENTCLOSING; }
+  bool is_owner_being_restored() const  { return lparam == SW_PARENTOPENING; }
 };
 
 struct size_params : public message_params {
-  [[nodiscard]] bool is_other_maximized() const noexcept { return wparam == 4; }
-  [[nodiscard]] bool is_maximized() const noexcept       { return wparam == 2; }
-  [[nodiscard]] bool is_other_restored() const noexcept  { return wparam == 3; }
-  [[nodiscard]] bool is_minimized() const noexcept       { return wparam == 1; }
-  [[nodiscard]] bool is_restored() const noexcept        { return wparam == 0; }
-  [[nodiscard]] SIZE sz() const noexcept                 { return {LOWORD(lparam), HIWORD(lparam)}; }
+  bool is_other_maximized() const { return wparam == 4; }
+  bool is_maximized() const       { return wparam == 2; }
+  bool is_other_restored() const  { return wparam == 3; }
+  bool is_minimized() const       { return wparam == 1; }
+  bool is_restored() const        { return wparam == 0; }
+  SIZE sz() const                 { return {LOWORD(lparam), HIWORD(lparam)}; }
 };
 
 struct sizeclipboard_params : public message_params {
-  [[nodiscard]] HWND clipboard_viewer() const noexcept      { return reinterpret_cast<HWND>(wparam); }
-  [[nodiscard]] const RECT& clipboard_rect() const noexcept { return *reinterpret_cast<const RECT*>(lparam); }
+  HWND clipboard_viewer() const      { return reinterpret_cast<HWND>(wparam); }
+  const RECT& clipboard_rect() const { return *reinterpret_cast<const RECT*>(lparam); }
 };
 
 struct sizing_params : public message_params {
-  [[nodiscard]] WORD edge() const noexcept           { return static_cast<WORD>(wparam); }
-  [[nodiscard]] RECT& screen_coords() const noexcept { return *reinterpret_cast<RECT*>(lparam); }
+  WORD edge() const           { return static_cast<WORD>(wparam); }
+  RECT& screen_coords() const { return *reinterpret_cast<RECT*>(lparam); }
 };
 
 struct spoolerstatus_params : public message_params {
-  [[nodiscard]] UINT status_flag() const noexcept    { return static_cast<UINT>(wparam); }
-  [[nodiscard]] WORD remaining_jobs() const noexcept { return LOWORD(lparam); }
+  UINT status_flag() const    { return static_cast<UINT>(wparam); }
+  WORD remaining_jobs() const { return LOWORD(lparam); }
 };
 
 struct stylechanged_params : public message_params {
-  [[nodiscard]] bool is_style() const noexcept                  { return (wparam & GWL_STYLE) != 0; }
-  [[nodiscard]] bool is_ex_style() const noexcept               { return (wparam & GWL_EXSTYLE) != 0; }
-  [[nodiscard]] const STYLESTRUCT& stylestruct() const noexcept { return *reinterpret_cast<const STYLESTRUCT*>(lparam); }
+  bool is_style() const                  { return (wparam & GWL_STYLE) != 0; }
+  bool is_ex_style() const               { return (wparam & GWL_EXSTYLE) != 0; }
+  const STYLESTRUCT& stylestruct() const { return *reinterpret_cast<const STYLESTRUCT*>(lparam); }
 };
 
 using stylechanging_params = stylechanged_params;
 using syschar_params       = char_params;
 
 struct syscommand_params : public pos_params {
-  [[nodiscard]] WORD command_type() const noexcept { return static_cast<WORD>(wparam); }
+  WORD command_type() const { return static_cast<WORD>(wparam); }
 };
 
 using sysdeadchar_params = deadchar_params;
@@ -598,44 +600,44 @@ using syskeydown_params  = keydown_params;
 using syskeyup_params    = keyup_params;
 
 struct tcard_params : public message_params {
-  [[nodiscard]] UINT action_id() const noexcept   { return static_cast<UINT>(wparam); }
-  [[nodiscard]] long action_data() const noexcept { return static_cast<long>(lparam); }
+  UINT action_id() const   { return static_cast<UINT>(wparam); }
+  long action_data() const { return static_cast<long>(lparam); }
 };
 
 using timechange_params = message_params;
 
 struct timer_params : public message_params {
-  [[nodiscard]] UINT_PTR timer_id() const noexcept  { return static_cast<UINT_PTR>(wparam); }
-  [[nodiscard]] TIMERPROC callback() const noexcept { return reinterpret_cast<TIMERPROC>(lparam); }
+  UINT_PTR timer_id() const  { return static_cast<UINT_PTR>(wparam); }
+  TIMERPROC callback() const { return reinterpret_cast<TIMERPROC>(lparam); }
 };
 
 struct uninitmenupopup_params : public message_params {
-  [[nodiscard]] HMENU hmenu() const noexcept  { return reinterpret_cast<HMENU>(wparam); }
-  [[nodiscard]] WORD menu_id() const noexcept { return HIWORD(lparam); }
+  HMENU hmenu() const  { return reinterpret_cast<HMENU>(wparam); }
+  WORD menu_id() const { return HIWORD(lparam); }
 };
 
 using userchanged_params = message_params;
 
 struct vkeytoitem_params : public message_params {
-  [[nodiscard]] BYTE vkey_code() const noexcept         { return static_cast<BYTE>(LOWORD(wparam)); }
-  [[nodiscard]] WORD current_caret_pos() const noexcept { return HIWORD(wparam); }
-  [[nodiscard]] HWND hlistbox() const noexcept          { return reinterpret_cast<HWND>(lparam); }
+  BYTE vkey_code() const         { return static_cast<BYTE>(LOWORD(wparam)); }
+  WORD current_caret_pos() const { return HIWORD(wparam); }
+  HWND hlistbox() const          { return reinterpret_cast<HWND>(lparam); }
 };
 
 struct windowposchanged_params : public message_params {
-  [[nodiscard]] WINDOWPOS& windowpos() const noexcept { return *reinterpret_cast<WINDOWPOS*>(lparam); }
+  WINDOWPOS& windowpos() const { return *reinterpret_cast<WINDOWPOS*>(lparam); }
 };
 
 using windowposchanging_params = windowposchanged_params;
 
 struct quit_params : public message_params {
-  [[nodiscard]] int exit_code() const noexcept { return static_cast<int>(wparam); }
+  int exit_code() const { return static_cast<int>(wparam); }
 };
 
 struct dpichanged_params : public message_params {
-  [[nodiscard]] WORD dpi_x() const noexcept { return LOWORD(wparam); }
-  [[nodiscard]] WORD dpi_y() const noexcept { return HIWORD(wparam); }
-  [[nodiscard]] RECT* suggested_rect() const noexcept { return reinterpret_cast<RECT*>(lparam); }
+  WORD dpi_x() const { return LOWORD(wparam); }
+  WORD dpi_y() const { return HIWORD(wparam); }
+  RECT* suggested_rect() const { return reinterpret_cast<RECT*>(lparam); }
 };
 
 using dpichangedbeforeparent_params = message_params;
