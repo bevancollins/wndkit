@@ -43,7 +43,8 @@ public:
     return size;
   }
 
-  virtual void resize(const RECT& area) override {
+protected:
+  virtual void resize(HDWP& hdwp, const RECT& area) override {
     auto margin = to_pixels(margin_dlu_);
     auto spacing = to_pixels(spacing_dlu_);
 
@@ -76,11 +77,11 @@ public:
         aligned_pos.y + item_size.cy
       };
 
-      item->resize(item_area);
+      item->resize(hdwp, item_area);
     }
   }
 
-protected:
+private:
   orientation orientation_;
 };
 

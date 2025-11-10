@@ -76,10 +76,17 @@ public:
       set_font_size({tm.tmAveCharWidth, tm.tmHeight});
   }
 
+  void resize(const RECT& area) {
+    auto hdwp = BeginDeferWindowPos(0);
+    resize(hdwp, area);
+    EndDeferWindowPos(hdwp);
+  }
+
   virtual SIZE calc_size() const = 0;
-  virtual void resize(const RECT& area) = 0;
 
 protected:
+  virtual void resize(HDWP& hdwp, const RECT& area) = 0;
+
   void set_font_size(SIZE size) {
     font_size_ = size;
 
@@ -98,7 +105,7 @@ protected:
     }
 
     virtual SIZE calc_size() = 0;
-    virtual void resize(RECT area) = 0;
+    virtual void resize(HDWP& hwdp, RECT area) = 0;
     virtual void set_font_size(SIZE size) = 0;
 
   private:
@@ -121,8 +128,8 @@ protected:
       return size_dlu_;
     }
 
-    void resize(RECT area) override {
-      MoveWindow(hwnd_, area.left, area.top, area.right - area.left, area.bottom - area.top, TRUE);
+    void resize(HDWP& hdwp, RECT area) override {
+      hdwp = DeferWindowPos(hdwp, hwnd_, 0, area.left, area.top, area.right - area.left, area.bottom - area.top, SWP_NOZORDER);
     }
 
     void set_font_size(SIZE) override {}
@@ -143,8 +150,8 @@ protected:
       return layout_->calc_size();
     }
 
-    void resize(RECT area) override {
-      layout_->resize(area);
+    void resize(HDWP& hdwp, RECT area) override {
+      layout_->resize(hdwp, area);
     }
 
     void set_font_size(SIZE size) override {
