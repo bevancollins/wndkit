@@ -44,14 +44,18 @@ public:
     settings_ = std::make_shared<unbound_settings>();
   }
 
+  static constexpr const wchar_t* class_name() {
+    return L"wndkit_webview";
+  }
+
   // register the window class once (call before creating any widgets)
-  [[nodiscard]] static ATOM register_class(HINSTANCE instance) {
+  static ATOM register_class(HINSTANCE instance) {
     WNDCLASSW wc{};
     wc.lpfnWndProc   = wndkit::dispatcher::window_proc;
     wc.hCursor       = LoadCursorW(nullptr, reinterpret_cast<LPCWSTR>(IDC_ARROW));
     wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
     wc.hInstance     = instance;
-    wc.lpszClassName = L"wndkit_webview";
+    wc.lpszClassName = class_name();
 
     auto atom = RegisterClassW(&wc);
     if (!atom)
@@ -144,10 +148,10 @@ public:
     return settings_;
   }
 
-  void create(HWND parent, int x, int y, int width, int height, ATOM atom) {
+  void create(HWND parent, int x, int y, int width, int height) {
     auto hwnd = wndkit::dispatcher::create_window(&message_handler_,
       0,
-      reinterpret_cast<LPCWSTR>(static_cast<WORD>(atom)),
+      class_name(),
       nullptr,
       WS_CHILD | WS_VISIBLE,
       x, y, width, height,
