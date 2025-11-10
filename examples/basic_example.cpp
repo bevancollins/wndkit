@@ -1,25 +1,30 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <string>
-#include <utility>
 #include <wndkit/dispatcher.hpp>
 #include <wndkit/message_handler.hpp>
+#include <wndkit/widgets/main_window.hpp>
+#include <wndkit/widgets/vbox_layout.hpp>
 
 #define IDC_START_BUTTON 1001
 #define IDC_STOP_BUTTON  1002
 
 class ticker {
 public:
-  void create(HWND parent, int x, int y, int width, int height, HINSTANCE instance) {
+  HWND create(HWND parent, int x, int y, int width, int height, HINSTANCE instance) {
     hwnd_ = wndkit::dispatcher::create_subclass_window(&message_handler_,
         {}, WC_STATICW, {},
         WS_CHILD | WS_VISIBLE,
         x, y, width, height,
         parent, {}, instance, {});
 
-    message_handler_.on_message<WM_TIMER>([this](HWND, const auto&) {
-      tick();
-    });
+    message_handler_
+      .on_message<WM_TIMER>([this](HWND, const auto&) {
+        tick();
+      })
+    ;
+
+    return hwnd_;
   }
 
   void start() {
@@ -41,53 +46,51 @@ private:
   int seconds_{};
 };
 
-class example_window {
+class example_window : public wndkit::widgets::main_window {
 public:
   example_window() {
     message_handler_
-      .on_message<WM_CREATE>([this](HWND hwnd, const auto& params) {
-        on_create(hwnd, params);
-      })
-      .on_message_invoke<WM_CLOSE>(DestroyWindow)
-      .on_message_invoke<WM_DESTROY>(PostQuitMessage, 0)
       .on_command_invoke(IDC_START_BUTTON, [this]() {
         ticker_.start();
       })
       .on_command_invoke(IDC_STOP_BUTTON, [this]() {
         ticker_.stop();
-      });
-  }
+      })
+    ;
 
-  template<typename... Args>
-  decltype(auto) create(Args&&... args) {
-    return wndkit::dispatcher::create_window(&message_handler_, std::forward<Args>(args)...);
+
+    set_layout(std::make_unique<wndkit::widgets::vbox_layout>());
   }
 
 private:
-  void on_create(HWND hwnd, const wndkit::create_params& params) {
-    CreateWindowW(
+  void on_create(HWND hwnd, const wndkit::create_params& params) override {
+    layout()
+      .add_widget(CreateWindowW(
         WC_BUTTONW, L"Start",
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        50, 50, 150, 20,
-        hwnd, (HMENU)IDC_START_BUTTON, params.createstruct()->hInstance, {});
+        0, 0, 0, 0,
+        hwnd, (HMENU)IDC_START_BUTTON, params.createstruct()->hInstance, {}))
 
-    CreateWindowW(
+      .add_widget(CreateWindowW(
         WC_BUTTONW, L"Stop",
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        50, 70, 150, 20,
-        hwnd, (HMENU)IDC_STOP_BUTTON, params.createstruct()->hInstance, {});
+        0, 0, 0, 0,
+        hwnd, (HMENU)IDC_STOP_BUTTON, params.createstruct()->hInstance, {}))
+      .add_widget(ticker_.create(hwnd, 0, 0, 0, 0, params.createstruct()->hInstance))
+    ;
 
-    ticker_.create(hwnd, 50, 100, 50, 20, params.createstruct()->hInstance);
+    wndkit::widgets::main_window::on_create(hwnd, params);
   }
 
   ticker ticker_;
-  wndkit::message_handler message_handler_;
 };
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int) {
+  SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
   INITCOMMONCONTROLSEX init_cc{
     .dwSize = sizeof(init_cc),
-    .dwICC = ICC_STANDARD_CLASSES,
+    .dwICC = ICC_WIN95_CLASSES | ICC_STANDARD_CLASSES,
   };
   InitCommonControlsEx(&init_cc);
 
@@ -95,7 +98,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int) {
     .lpfnWndProc = wndkit::dispatcher::window_proc,
     .hInstance = hInstance,
     .hCursor = LoadCursor(nullptr, IDC_ARROW),
-    .hbrBackground = (HBRUSH)(COLOR_WINDOW+1),
+    .hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW+1),
     .lpszClassName = L"wndkit_example",
   };
   RegisterClassW(&wc);
