@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <shellscalingapi.h>
+#include <memory>
 #include <wil/resource.h>
 #include <wndkit/dispatcher.hpp>
 #include <wndkit/message_handler.hpp>
@@ -11,9 +12,7 @@ namespace wndkit::widgets {
 
 class top_level_window {
 public:
-  top_level_window(box_layout::orientation orientation = box_layout::orientation::vertical)
-    : layout_(message_handler_, orientation) {
-
+  top_level_window() {
     message_handler_
       .on_message<WM_CREATE>([this](HWND hwnd, const create_params& params) {
         on_create(hwnd, params);
@@ -28,7 +27,7 @@ public:
         on_close(hwnd, params);
       })
       .on_message<WM_CTLCOLORSTATIC>([this](HWND hwnd, const auto& params) {
-        return on_ctlcolorstatic(hwnd, params);
+        return on_ctl_color_static(hwnd, params);
       })
     ;
   }
@@ -38,7 +37,19 @@ public:
     return wndkit::dispatcher::create_window(&message_handler_, std::forward<Args>(args)...);
   }
 
-  box_layout& layout() noexcept { return layout_; }
+  layout& layout() { return *layout_.get(); }
+
+  void set_layout(std::unique_ptr<wndkit::widgets::layout> layout) {
+    assert(!layout_);
+    if (!layout_) {
+      layout_ = std::move(layout);
+      layout_->set_margin({7, 7});
+
+      message_handler_.on_message<WM_SETFONT>([this](HWND hwnd, const auto& params) {
+        layout_->set_font(hwnd, params.hfont());
+      });
+    }
+  }
 
 protected:
   virtual void on_create(HWND hwnd, const create_params&) {
@@ -57,15 +68,19 @@ protected:
         SWP_NOZORDER | SWP_NOACTIVATE);
   }
 
-  virtual void on_size(HWND hwnd, const wndkit::size_params& params) {
-    layout_.resize(params.sz());
+  virtual void on_size(HWND hwnd, [[maybe_unused]] const wndkit::size_params& params) {
+    if (layout_) {
+      RECT rect{};
+      GetClientRect(hwnd, &rect);
+      layout_->resize(rect);
+    }
   }
 
   virtual void on_close(HWND hwnd, [[maybe_unused]] const wndkit::close_params& params) {
     DestroyWindow(hwnd);
   }
 
-  virtual LRESULT on_ctlcolorstatic(HWND hwnd, const wndkit::ctlcolorstatic_params& params) {
+  virtual LRESULT on_ctl_color_static(HWND hwnd, const wndkit::ctlcolorstatic_params& params) {
     SetBkMode(params.hdc(), TRANSPARENT);
     return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_WINDOW));
   }
@@ -95,7 +110,7 @@ protected:
 
   wil::unique_hfont font_;
   wndkit::message_handler message_handler_;
-  box_layout layout_;
+  std::unique_ptr<wndkit::widgets::layout> layout_;
 };
 
 }

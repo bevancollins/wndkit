@@ -2,22 +2,18 @@
 
 #include <windows.h>
 #include <commctrl.h>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
-#include <cstdint>
-#include <optional>
 #include <wil/resource.h>
-#include <wndkit/message_handler.hpp>
+#include "hyperlink.hpp"
 
-namespace wndkit {
+namespace wndkit::widgets {
 
-class box_layout {
+class layout {
 public:
-  enum class orientation {
-    horizontal,
-    vertical
-  };
-
   enum class alignment_flag : uint32_t {
     none          = 0x0,
     align_left    = 0x1,
@@ -43,92 +39,121 @@ public:
     );
   }
 
-  explicit box_layout(wndkit::message_handler& message_handler, orientation orientation)
-    : box_layout(message_handler, orientation, {7, 7}) {
+  explicit layout()
+    : layout({4, 4}) {
   }
 
-  explicit box_layout(wndkit::message_handler& message_handler, orientation orientation, SIZE margin_dlu) :
-    orientation_(orientation),
-    margin_dlu_(margin_dlu) {
-
-    message_handler
-      .on_message<WM_SETFONT>([this](HWND hwnd, const auto& params) {
-        on_setfont(hwnd, params);
-      })
-    ;
+  explicit layout(SIZE spacing_dlu) :
+    spacing_dlu_(spacing_dlu) {
   }
 
-  auto& add_widget(HWND hwnd, bool related = true, alignment_flag align = alignment_flag::none, std::optional<SIZE> size_dlu = {}) {
+  void set_margin(SIZE margin_dlu) {
+    margin_dlu_ = margin_dlu;
+  }
+
+  auto& add_widget(HWND hwnd, alignment_flag align = alignment_flag::none, std::optional<SIZE> size_dlu = {}) {
     if (!size_dlu.has_value())
       size_dlu = get_standard_control_size_dlu(hwnd);
 
-    SIZE spacing_dlu;
-    if (related)
-      spacing_dlu = {4, 4};
-    else
-      spacing_dlu = {7, 7};
-
-    widgets_.emplace_back(
-        hwnd,
-        align,
-        size_dlu,
-        spacing_dlu);
+    assert(size_dlu.has_value());
+    items_.push_back(std::make_unique<widget_child_item>(align, hwnd, size_dlu.value()));
 
     return *this;
   }
 
-  void resize(const SIZE& size) {
-    SIZE margin = to_pixels(margin_dlu_);
+  auto& add_layout(std::unique_ptr<layout> layout, alignment_flag align = alignment_flag::none) {
+    items_.push_back(std::make_unique<layout_child_item>(align, std::move(layout)));
 
-    const auto available_width  = size.cx - 2 * margin.cx;
-    const auto available_height = size.cy - 2 * margin.cy;
-
-    auto x = margin.cx;
-    auto y = margin.cy;
-
-    for (const auto& widget : widgets_) {
-      auto size = to_pixels(widget.size_dlu.value());
-      auto spacing = to_pixels(widget.spacing_dlu);
-
-      auto pos_x = x;
-      auto pos_y = y;
-
-      if (orientation_ == orientation::horizontal) {
-        // Vertical alignment
-        if ((widget.alignment & alignment_flag::align_vcenter) == alignment_flag::align_vcenter)
-          pos_y = margin.cy + (available_height - size.cy) / 2;
-        else if ((widget.alignment & alignment_flag::align_bottom) == alignment_flag::align_bottom)
-          pos_y = size.cy - margin.cy - size.cy;
-
-        x += size.cx + spacing.cx;
-      } else {
-        // Horizontal alignment
-        if ((widget.alignment & alignment_flag::align_hcenter) == alignment_flag::align_hcenter)
-          pos_x = margin.cx + (available_width - size.cx) / 2;
-        else if ((widget.alignment & alignment_flag::align_right) == alignment_flag::align_right)
-          pos_x = size.cx - margin.cx - size.cx;
-
-        y += size.cy + spacing.cy;
-      }
-
-      MoveWindow(widget.hwnd, pos_x, pos_y, size.cx, size.cy, TRUE);
-    }
+    return *this;
   }
 
-private:
-  struct layout_widget {
-    HWND hwnd{};
-    alignment_flag alignment{alignment_flag::none};
-    std::optional<SIZE> size_dlu{};
-    SIZE spacing_dlu{};
+  void set_font(HWND hwnd, HFONT font) {
+    auto hdc = wil::GetDC(hwnd);
+    auto old_font = wil::SelectObject(hdc.get(), font);
+
+    TEXTMETRICW tm;
+    if (GetTextMetricsW(hdc.get(), &tm))
+      set_font_size({tm.tmAveCharWidth, tm.tmHeight});
+  }
+
+  virtual SIZE calc_size() const = 0;
+  virtual void resize(const RECT& area) = 0;
+
+protected:
+  void set_font_size(SIZE size) {
+    font_size_ = size;
+
+    for (auto& item : items_)
+      item->set_font_size(font_size_);
+  }
+
+  class child_item {
+  public:
+    child_item(alignment_flag alignment) :
+      alignment_(alignment) {
+    }
+
+    auto alignment() const {
+      return alignment_;
+    }
+
+    virtual SIZE calc_size() = 0;
+    virtual void resize(RECT area) = 0;
+    virtual void set_font_size(SIZE size) = 0;
+
+  private:
+    alignment_flag alignment_;
   };
 
-  void on_setfont(HWND hwnd, const wndkit::setfont_params& params) {
-    auto hdc = wil::GetDC(hwnd);
-    auto old_font = wil::SelectObject(hdc.get(), params.hfont());
+  class widget_child_item : public child_item {
+  public:
+    widget_child_item(alignment_flag alignment, HWND hwnd, SIZE size_dlu) :
+      child_item(alignment),
+      hwnd_(hwnd),
+      size_dlu_(size_dlu) {
+    }
 
-    GetTextMetricsW(hdc.get(), &tm_);
-  }
+    auto hwnd() {
+      return hwnd_;
+    }
+
+    SIZE calc_size() override {
+      return size_dlu_;
+    }
+
+    void resize(RECT area) override {
+      MoveWindow(hwnd_, area.left, area.top, area.right - area.left, area.bottom - area.top, TRUE);
+    }
+
+    void set_font_size(SIZE) override {}
+
+  private:
+    HWND hwnd_;
+    SIZE size_dlu_;
+  };
+
+  class layout_child_item : public child_item {
+  public:
+    layout_child_item(alignment_flag alignment, std::unique_ptr<layout> layout) :
+      child_item(alignment),
+      layout_(std::move(layout)) {
+    }
+
+    SIZE calc_size() override {
+      return layout_->calc_size();
+    }
+
+    void resize(RECT area) override {
+      layout_->resize(area);
+    }
+
+    void set_font_size(SIZE size) override {
+      layout_->set_font_size(size);
+    }
+
+  private:
+    std::unique_ptr<layout> layout_;
+  };
 
   static std::optional<SIZE> get_standard_control_size_dlu(HWND hwnd) {
     std::wstring class_name(64, L'\0');
@@ -160,6 +185,8 @@ private:
       return {{50, 50}};
     } else if (class_name == WC_SCROLLBARW) {
       return {{16, 70}};
+    } else if (class_name == hyperlink::class_name()) {
+      return {{50, 8}};
     }
 
     return {};
@@ -168,15 +195,15 @@ private:
   // Compute base unit size (DLU)
   SIZE to_pixels(SIZE dlu) {
     return {
-      MulDiv(dlu.cx, tm_.tmAveCharWidth, 4),
-      MulDiv(dlu.cy, tm_.tmHeight, 8)
+      MulDiv(dlu.cx, font_size_.cx, 4),
+      MulDiv(dlu.cy, font_size_.cy, 8)
     };
   }
 
-  orientation orientation_;
-  TEXTMETRICW tm_{};
-  std::vector<layout_widget> widgets_;
+  SIZE font_size_{};
+  std::vector<std::unique_ptr<child_item>> items_;
   SIZE margin_dlu_{};
+  SIZE spacing_dlu_{};
 };
 
 }
