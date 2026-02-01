@@ -78,6 +78,8 @@ public:
 
   void resize(const RECT& area) {
     auto hdwp = BeginDeferWindowPos(0);
+    if (!hdwp)
+      throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
     resize(hdwp, area);
     EndDeferWindowPos(hdwp);
   }
@@ -87,7 +89,7 @@ public:
 protected:
   virtual void resize(HDWP& hdwp, const RECT& area) = 0;
 
-  void set_font_size(SIZE size) {
+  void set_font_size(const SIZE& size) {
     font_size_ = size;
 
     for (auto& item : items_)
@@ -106,7 +108,7 @@ protected:
 
     virtual SIZE calc_size() = 0;
     virtual void resize(HDWP& hwdp, RECT area) = 0;
-    virtual void set_font_size(SIZE size) = 0;
+    virtual void set_font_size(const SIZE& size) = 0;
 
   private:
     alignment_flag alignment_;
@@ -130,9 +132,11 @@ protected:
 
     void resize(HDWP& hdwp, RECT area) override {
       hdwp = DeferWindowPos(hdwp, hwnd_, 0, area.left, area.top, area.right - area.left, area.bottom - area.top, SWP_NOZORDER);
+      if (!hdwp)
+        throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
     }
 
-    void set_font_size(SIZE) override {}
+    void set_font_size(const SIZE&) override {}
 
   private:
     HWND hwnd_;
@@ -154,7 +158,7 @@ protected:
       layout_->resize(hdwp, area);
     }
 
-    void set_font_size(SIZE size) override {
+    void set_font_size(const SIZE& size) override {
       layout_->set_font_size(size);
     }
 
