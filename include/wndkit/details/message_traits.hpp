@@ -655,14 +655,18 @@ struct message_traits<WM_DPICHANGED> {
   using param_type = dpichanged_params;
 };
 
+#ifdef WM_DPICHANGED_BEFOREPARENT
 template<>
 struct message_traits<WM_DPICHANGED_BEFOREPARENT> {
   using param_type = dpichangedbeforeparent_params;
 };
+#endif
 
+#ifdef WM_DPICHANGED_AFTERPARENT
 template<>
 struct message_traits<WM_DPICHANGED_AFTERPARENT> {
   using param_type = dpichangedafterparent_params;
 };
+#endif
 
 }
