@@ -69,11 +69,14 @@ protected:
   }
 
   virtual void on_size(HWND hwnd, [[maybe_unused]] const wndkit::size_params& params) {
-    if (layout_) {
-      RECT rect{};
-      GetClientRect(hwnd, &rect);
-      layout_->resize(rect);
-    }
+    try {
+      if (layout_) {
+        RECT rect{};
+        if (!GetClientRect(hwnd, &rect))
+          throw std::system_error(static_cast<int>(GetLastError()), std::system_category());
+        layout_->resize(rect);
+      }
+    } catch (...) {}
   }
 
   virtual void on_close(HWND hwnd, [[maybe_unused]] const wndkit::close_params& params) {
@@ -85,7 +88,7 @@ protected:
     return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_WINDOW));
   }
 
-  static wil::unique_hfont get_default_ui_font(UINT dpi) {
+  static wil::unique_hfont get_default_font(UINT dpi) {
     NONCLIENTMETRICSW ncm{};
     ncm.cbSize = sizeof(ncm);
 
@@ -95,12 +98,11 @@ protected:
     // Fallback if that fails
     LOGFONTW lf{};
     GetObjectW(GetStockObject(DEFAULT_GUI_FONT), sizeof(lf), &lf);
-    lf.lfUnderline = TRUE;
     return wil::unique_hfont(CreateFontIndirectW(&lf));
   }
 
   void refresh_font(HWND hwnd, UINT dpi) {
-    font_ = get_default_ui_font(dpi);
+    font_ = get_default_font(dpi);
     SendMessageW(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(font_.get()), TRUE);
     EnumChildWindows(hwnd, [](HWND child, LPARAM font_param) -> BOOL {
       SendMessageW(child, WM_SETFONT, font_param, TRUE);
