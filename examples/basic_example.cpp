@@ -4,7 +4,6 @@
 #include <wndkit/dispatcher.hpp>
 #include <wndkit/message_handler.hpp>
 #include <wndkit/widgets/main_window.hpp>
-#include <wndkit/widgets/vbox_layout.hpp>
 
 #define IDC_START_BUTTON 1001
 #define IDC_STOP_BUTTON  1002
@@ -50,6 +49,9 @@ class example_window : public wndkit::widgets::main_window {
 public:
   example_window() {
     message_handler_
+      .on_message<WM_CREATE>([this](HWND hwnd, const wndkit::create_params& params) {
+        on_create(hwnd, params);
+      })
       .on_command_invoke(IDC_START_BUTTON, [this]() {
         ticker_.start();
       })
@@ -57,29 +59,24 @@ public:
         ticker_.stop();
       })
     ;
-
-
-    set_layout(std::make_unique<wndkit::widgets::vbox_layout>());
   }
 
 private:
-  void on_create(HWND hwnd, const wndkit::create_params& params) override {
-    layout()
-      .add_widget(CreateWindowW(
+  void on_create(HWND hwnd, const wndkit::create_params& params) {
+      CreateWindowW(
         WC_BUTTONW, L"Start",
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        0, 0, 0, 0,
-        hwnd, (HMENU)IDC_START_BUTTON, params.createstruct()->hInstance, {}))
+        10, 10, 50, 20,
+        hwnd, (HMENU)IDC_START_BUTTON, params.createstruct()->hInstance, {});
 
-      .add_widget(CreateWindowW(
+      CreateWindowW(
         WC_BUTTONW, L"Stop",
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        0, 0, 0, 0,
-        hwnd, (HMENU)IDC_STOP_BUTTON, params.createstruct()->hInstance, {}))
-      .add_widget(ticker_.create(hwnd, 0, 0, 0, 0, params.createstruct()->hInstance))
-    ;
+        10, 30, 50, 20,
+        hwnd, (HMENU)IDC_STOP_BUTTON, params.createstruct()->hInstance, {});
 
-    wndkit::widgets::main_window::on_create(hwnd, params);
+      ticker_.create(hwnd, 10, 50, 50, 50, params.createstruct()->hInstance);
+    ;
   }
 
   ticker ticker_;
